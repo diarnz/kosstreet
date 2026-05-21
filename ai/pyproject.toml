@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kostreet-ai"
+version = "0.1.0"
+description = "AI engineering package for KoStreet civic issue detection and street audits."
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.2.1",
+  "opencv-python>=4.10.0.84",
+  "pillow>=11.1.0",
+  "pydantic>=2.10.5"
+]
+
+[project.optional-dependencies]
+models = [
+  "torch>=2.5.1",
+  "transformers>=4.48.0",
+  "ultralytics>=8.3.60"
+]
+dev = [
+  "pytest>=8.3.4",
+  "ruff>=0.9.2"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
