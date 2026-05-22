@@ -1,4 +1,4 @@
-from app.models.audit import AuditRun, AuditSuggestion
+from app.models.audit import AuditFrame, AuditRun, AuditSuggestion
 from app.models.enums import (
     ActorType,
     AuditRunStatus,
@@ -13,6 +13,7 @@ from app.models.report import Report, ReportWorkflowEvent
 __all__ = [
     "Report",
     "ReportWorkflowEvent",
+    "AuditFrame",
     "AuditRun",
     "AuditSuggestion",
     "IssueCategory",

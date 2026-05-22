@@ -2,10 +2,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 from fastapi import status as http_status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.engine import get_db
 from app.schemas.audit import (
+    AuditFrameDetail,
+    AuditFrameSummary,
     AuditRunCreate,
     AuditRunSummary,
     AuditSuggestionRead,
@@ -52,13 +55,42 @@ async def get_audit_run(
     return AuditRunSummary.model_validate(run)
 
 
+@audit_runs_router.get("/{run_id}/frames", response_model=list[AuditFrameSummary])
+async def list_audit_frames(
+    run_id: UUID,
+    service: AuditService = Depends(get_audit_service),
+) -> list[AuditFrameSummary]:
+    frames = await service.list_frames(run_id)
+    return [AuditFrameSummary.from_model(frame) for frame in frames]
+
+
+@audit_runs_router.get("/{run_id}/frames/{frame_index}", response_model=AuditFrameDetail)
+async def get_audit_frame(
+    run_id: UUID,
+    frame_index: int,
+    service: AuditService = Depends(get_audit_service),
+) -> AuditFrameDetail:
+    frame = await service.get_frame(run_id, frame_index)
+    return AuditFrameDetail.from_model(frame)
+
+
+@audit_runs_router.get("/{run_id}/frames/{frame_index}/image")
+async def get_audit_frame_image(
+    run_id: UUID,
+    frame_index: int,
+    service: AuditService = Depends(get_audit_service),
+) -> Response:
+    image_bytes, content_type = await service.get_frame_image(run_id, frame_index)
+    return Response(content=image_bytes, media_type=content_type)
+
+
 @audit_runs_router.get("/{run_id}/suggestions", response_model=list[AuditSuggestionRead])
 async def list_audit_suggestions(
     run_id: UUID,
     service: AuditService = Depends(get_audit_service),
 ) -> list[AuditSuggestionRead]:
     suggestions = await service.list_suggestions(run_id)
-    return [AuditSuggestionRead.model_validate(suggestion) for suggestion in suggestions]
+    return [AuditSuggestionRead.from_model(suggestion) for suggestion in suggestions]
 
 
 @audit_suggestions_router.patch("/{suggestion_id}", response_model=AuditSuggestionRead)
@@ -68,7 +100,7 @@ async def review_audit_suggestion(
     service: AuditService = Depends(get_audit_service),
 ) -> AuditSuggestionRead:
     suggestion = await service.review_suggestion(suggestion_id, payload)
-    return AuditSuggestionRead.model_validate(suggestion)
+    return AuditSuggestionRead.from_model(suggestion)
 
 
 @audit_suggestions_router.get("/{suggestion_id}", response_model=AuditSuggestionRead)
@@ -77,7 +109,16 @@ async def get_audit_suggestion(
     service: AuditService = Depends(get_audit_service),
 ) -> AuditSuggestionRead:
     suggestion = await service.get_suggestion(suggestion_id)
-    return AuditSuggestionRead.model_validate(suggestion)
+    return AuditSuggestionRead.from_model(suggestion)
+
+
+@audit_suggestions_router.get("/{suggestion_id}/frame-image")
+async def get_audit_suggestion_frame_image(
+    suggestion_id: UUID,
+    service: AuditService = Depends(get_audit_service),
+) -> Response:
+    image_bytes, content_type = await service.get_suggestion_frame_image(suggestion_id)
+    return Response(content=image_bytes, media_type=content_type)
 
 
 @audit_suggestions_router.post(
@@ -90,4 +131,3 @@ async def convert_audit_suggestion_to_report(
     service: AuditService = Depends(get_audit_service),
 ) -> SuggestionConversionResult:
     return await service.convert_to_report(suggestion_id)
-

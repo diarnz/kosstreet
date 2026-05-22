@@ -14,14 +14,20 @@ from app.integrations.street_imagery import (
     GoogleStreetViewClient,
     StreetImageryFrameRequest,
 )
+from app.models.audit import AuditFrame as AuditFrameRecord
 from app.models.audit import AuditRun, AuditSuggestion
 from app.models.enums import AuditRunStatus, AuditSuggestionStatus, IssueCategory
-from app.repositories.audit_repository import AuditRunRepository, AuditSuggestionRepository
+from app.repositories.audit_repository import (
+    AuditFrameRepository,
+    AuditRunRepository,
+    AuditSuggestionRepository,
+)
 from app.repositories.report_repository import ReportRepository
 from app.schemas.audit import (
     AuditRunCreate,
     AuditSuggestionReview,
     SuggestionConversionResult,
+    regions_to_json,
 )
 from app.services.ai_service import AIService
 from app.services.report_service import get_department_for_category
@@ -30,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class AuditFrame:
+class PlannedAuditFrame:
     latitude: float
     longitude: float
     heading: int
@@ -70,6 +76,7 @@ class AuditService:
         self.db = db
         self.run_repository = AuditRunRepository(db)
         self.suggestion_repository = AuditSuggestionRepository(db)
+        self.frame_repository = AuditFrameRepository(db)
         self.report_repository = ReportRepository(db)
         self.gsv_client = GoogleStreetViewClient(
             api_key=settings.google_maps_api_key,
@@ -118,6 +125,56 @@ class AuditService:
     async def list_suggestions(self, run_id: UUID) -> list[AuditSuggestion]:
         await self.get_run(run_id)
         return await self.suggestion_repository.list_for_run(run_id)
+
+    async def list_frames(self, run_id: UUID) -> list[AuditFrameRecord]:
+        await self.get_run(run_id)
+        return await self.frame_repository.list_for_run(run_id)
+
+    async def get_frame(self, run_id: UUID, frame_index: int) -> AuditFrameRecord:
+        await self.get_run(run_id)
+        frame = await self.frame_repository.get_for_run(run_id, frame_index)
+        if frame is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Audit frame not found",
+            )
+        return frame
+
+    async def get_frame_image(self, run_id: UUID, frame_index: int) -> tuple[bytes, str]:
+        frame = await self.get_frame(run_id, frame_index)
+        return await self._fetch_proxied_frame_image(frame.image_url)
+
+    async def get_suggestion_frame_image(self, suggestion_id: UUID) -> tuple[bytes, str]:
+        suggestion = await self._get_suggestion_or_404(suggestion_id)
+        if suggestion.frame_index is not None:
+            frame = await self.frame_repository.get_for_run(
+                suggestion.audit_run_id,
+                suggestion.frame_index,
+            )
+            if frame is not None:
+                return await self._fetch_proxied_frame_image(frame.image_url)
+
+        if suggestion.image_url:
+            return await self._fetch_proxied_frame_image(suggestion.image_url)
+
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No frame image available for this suggestion",
+        )
+
+    async def _fetch_proxied_frame_image(self, image_url: str) -> tuple[bytes, str]:
+        try:
+            street_frame = await asyncio.to_thread(
+                self.gsv_client.fetch_frame_by_url,
+                image_url,
+            )
+        except Exception as exc:
+            logger.exception("Failed to proxy Street View frame image")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to fetch Street View frame image",
+            ) from exc
+        return street_frame.data, street_frame.content_type
 
     async def get_suggestion(self, suggestion_id: UUID) -> AuditSuggestion:
         return await self._get_suggestion_or_404(suggestion_id)
@@ -170,6 +227,7 @@ class AuditService:
         async with AsyncSessionLocal() as db:
             run_repository = AuditRunRepository(db)
             suggestion_repository = AuditSuggestionRepository(db)
+            frame_repository = AuditFrameRepository(db)
 
             try:
                 await run_repository.set_status(run_id, AuditRunStatus.running)
@@ -186,11 +244,13 @@ class AuditService:
                 await run_repository.set_frames_total(run_id, len(frames))
                 await db.commit()
 
-                for frame in frames:
+                for frame_index, frame in enumerate(frames):
                     try:
                         await self._process_frame(
                             run_id,
+                            frame_index,
                             frame,
+                            frame_repository,
                             suggestion_repository,
                         )
                     except Exception:
@@ -211,7 +271,9 @@ class AuditService:
     async def _process_frame(
         self,
         run_id: UUID,
-        frame: AuditFrame,
+        frame_index: int,
+        frame: PlannedAuditFrame,
+        frame_repository: AuditFrameRepository,
         suggestion_repository: AuditSuggestionRepository,
     ) -> None:
         request = StreetImageryFrameRequest(
@@ -222,8 +284,33 @@ class AuditService:
         )
         street_frame = await asyncio.to_thread(self.gsv_client.fetch_frame, request)
         ai_result = await self.ai_service.analyze_image_bytes(street_frame.data)
+        image_url = self.gsv_client.build_frame_url(request)
+        regions_json = regions_to_json(ai_result.regions)
 
         confidence = ai_result.confidence or 0.0
+        saved_frame = await frame_repository.create(
+            {
+                "audit_run_id": run_id,
+                "frame_index": frame_index,
+                "latitude": frame.latitude,
+                "longitude": frame.longitude,
+                "heading": frame.heading,
+                "pitch": frame.pitch,
+                "image_url": image_url,
+                "is_civic_issue": ai_result.is_civic_issue,
+                "category": (
+                    ai_result.category.value
+                    if ai_result.category is not None
+                    else None
+                ),
+                "confidence": ai_result.confidence,
+                "severity": ai_result.severity,
+                "description": ai_result.description,
+                "detection_regions": regions_json if ai_result.is_civic_issue else None,
+                "model_name": settings.ai_model_name,
+            }
+        )
+
         if (
             not ai_result.is_civic_issue
             or ai_result.category is None
@@ -232,7 +319,7 @@ class AuditService:
             return
 
         category = IssueCategory(ai_result.category)
-        await suggestion_repository.create_bulk(
+        suggestions = await suggestion_repository.create_bulk(
             [
                 {
                     "audit_run_id": run_id,
@@ -244,14 +331,17 @@ class AuditService:
                     "description": ai_result.description,
                     "model_name": settings.ai_model_name,
                     "explanation": "AI street-audit frame analysis.",
-                    "image_url": self.gsv_client.build_frame_url(request),
+                    "image_url": image_url,
                     "image_attribution": "Google Street View",
                     "department": get_department_for_category(category),
                     "heading": frame.heading,
                     "pitch": frame.pitch,
+                    "frame_index": frame_index,
+                    "detection_regions": regions_json,
                 }
             ]
         )
+        await frame_repository.set_suggestion_id(saved_frame.id, suggestions[0].id)
 
     async def _resolve_waypoints(self, route_name: str) -> list[tuple[float, float]]:
         normalized = route_name.strip().lower()
@@ -285,9 +375,9 @@ class AuditService:
         location = data["results"][0]["geometry"]["location"]
         return [(float(location["lat"]), float(location["lng"]))]
 
-    def _build_frames(self, waypoints: list[tuple[float, float]]) -> list[AuditFrame]:
+    def _build_frames(self, waypoints: list[tuple[float, float]]) -> list[PlannedAuditFrame]:
         return [
-            AuditFrame(latitude=latitude, longitude=longitude, heading=heading)
+            PlannedAuditFrame(latitude=latitude, longitude=longitude, heading=heading)
             for latitude, longitude in waypoints
             for heading in HEADINGS
         ]

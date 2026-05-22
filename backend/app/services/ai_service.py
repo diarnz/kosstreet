@@ -22,7 +22,14 @@ Respond ONLY with a single valid JSON object - no explanation, no markdown:
   "category": one of "pothole" | "garbage" | "broken_streetlight" | "blocked_sidewalk" | "damaged_sign" | "other" | null,
   "confidence": a float between 0.0 and 1.0,
   "severity": one of "low" | "medium" | "high" | "critical" | null,
-  "description": a single sentence describing exactly what you see | null
+  "description": a single sentence describing exactly what you see | null,
+  "regions": [
+    {
+      "center_x": a float between 0.0 and 1.0 (horizontal position of the issue center),
+      "center_y": a float between 0.0 and 1.0 (vertical position of the issue center),
+      "radius": a float between 0.04 and 0.18 (approximate normalized circle size) | null
+    }
+  ] | null
 }
 
 Rules:
@@ -31,6 +38,10 @@ Rules:
 - severity reflects urgency and impact on citizens using the street.
 - description must be specific: name what you see, not just the category label.
 - If category is null, set is_civic_issue to false.
+- When is_civic_issue is true, include exactly one region pointing to the primary issue location.
+- center_x and center_y use normalized image coordinates: 0,0 is top-left and 1,1 is bottom-right.
+- If you cannot reasonably locate the issue in the image, set regions to null (do not guess wildly).
+- radius may be null; the system will apply a default based on severity.
 """
 
 
@@ -64,10 +75,7 @@ class AIService:
         if payload is None:
             return ImageAnalysisResult(is_civic_issue=False)
 
-        try:
-            return ImageAnalysisResult(**payload)
-        except ValueError:
-            return ImageAnalysisResult(is_civic_issue=False)
+        return ImageAnalysisResult.from_model_payload(payload)
 
     async def analyze_upload(self, file: UploadFile) -> ImageAnalysisResult:
         image_bytes = await file.read()

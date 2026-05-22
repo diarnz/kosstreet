@@ -110,12 +110,14 @@ import AuditRunQueue from '@/components/audit/AuditRunQueue.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
 import { useAuditRunsStore } from '@/stores/auditRuns';
+import { useAuditFramesStore } from '@/stores/auditFrames';
 import { useAuditSuggestionsStore } from '@/stores/auditSuggestions';
 import { useUiStore } from '@/stores/ui';
 import { formatAuditDateTime } from '@/utils/auditFormatting';
 
 const auditRunsStore = useAuditRunsStore();
 const auditSuggestionsStore = useAuditSuggestionsStore();
+const auditFramesStore = useAuditFramesStore();
 const uiStore = useUiStore();
 
 const principles = ['Suggested, not automatic', 'Confidence shown when returned', 'Human verified', 'Ticket-ready after backend conversion'];
@@ -142,6 +144,7 @@ onMounted(() => {
     if (selectedRun.status === 'queued' || selectedRun.status === 'running') {
       void auditRunsStore.fetchRuns();
       void auditSuggestionsStore.fetchForRun(selectedRun.id);
+      void auditFramesStore.fetchForRun(selectedRun.id);
     }
   }, 8000);
 });
@@ -167,6 +170,7 @@ watch(
   (runId) => {
     if (runId && !auditRunsStore.usingDemoRuns) {
       void auditSuggestionsStore.fetchForRun(runId);
+      void auditFramesStore.fetchForRun(runId);
     }
   },
 );

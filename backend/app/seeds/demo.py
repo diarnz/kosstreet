@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.audit import AuditRun, AuditSuggestion
+from app.models.audit import AuditFrame, AuditRun, AuditSuggestion
 from app.models.enums import (
     ActorType,
     AuditRunStatus,
@@ -18,10 +18,12 @@ from app.models.enums import (
     TicketStatus,
 )
 from app.models.report import Report, ReportWorkflowEvent
+from app.services.audit_service import HEADINGS, KNOWN_ROUTES
 
 SEED_NAMESPACE = uuid.UUID("4ee7f9ee-bd6b-4983-9551-87dc2590e2f3")
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 AUDIT_RESULTS_PATH = PROJECT_ROOT / "ai" / "data" / "demo" / "audit_results.json"
+DEMO_ROUTE_KEY = "bill clinton boulevard"
 
 
 def _seed_uuid(name: str) -> uuid.UUID:
@@ -32,13 +34,81 @@ def _dt(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+def _frame_key(
+    latitude: float,
+    longitude: float,
+    heading: int,
+    pitch: int = 0,
+) -> tuple[float, float, int, int]:
+    return (round(latitude, 10), round(longitude, 10), heading, pitch)
+
+
+def build_demo_frame_plan() -> list[dict[str, float | int]]:
+    waypoints = KNOWN_ROUTES[DEMO_ROUTE_KEY]
+    plan: list[dict[str, float | int]] = []
+    frame_index = 0
+
+    for latitude, longitude in waypoints:
+        for heading in HEADINGS:
+            plan.append(
+                {
+                    "frame_index": frame_index,
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "heading": heading,
+                    "pitch": 0,
+                }
+            )
+            frame_index += 1
+
+    return plan
+
+
+def index_demo_detections(detections: list[dict[str, Any]]) -> dict[tuple[float, float, int, int], dict[str, Any]]:
+    indexed: dict[tuple[float, float, int, int], dict[str, Any]] = {}
+
+    for detection in detections:
+        key = _frame_key(
+            float(detection["latitude"]),
+            float(detection["longitude"]),
+            int(detection.get("heading", 0)),
+            int(detection.get("pitch", 0)),
+        )
+        indexed[key] = detection
+
+    return indexed
+
+
+def regions_from_detection(detection: dict[str, Any]) -> list[dict[str, float]] | None:
+    raw_regions = detection.get("regions")
+    if not isinstance(raw_regions, list) or not raw_regions:
+        return None
+
+    regions: list[dict[str, float]] = []
+    for item in raw_regions:
+        if not isinstance(item, dict):
+            continue
+        try:
+            regions.append(
+                {
+                    "center_x": float(item["center_x"]),
+                    "center_y": float(item["center_y"]),
+                    "radius": float(item["radius"]),
+                }
+            )
+        except (KeyError, TypeError, ValueError):
+            continue
+
+    return regions or None
+
+
 async def seed_demo_data(db: AsyncSession) -> None:
     existing_reports = await db.scalar(select(func.count()).select_from(Report))
     if existing_reports and existing_reports > 0:
         return
 
     _seed_reports(db)
-    _seed_audit_run_and_suggestions(db)
+    _seed_audit_run_frames_and_suggestions(db)
     await db.flush()
 
 
@@ -151,10 +221,13 @@ def _seed_reports(db: AsyncSession) -> None:
             )
 
 
-def _seed_audit_run_and_suggestions(db: AsyncSession) -> None:
+def _seed_audit_run_frames_and_suggestions(db: AsyncSession) -> None:
     audit_data = _load_audit_results()
     run_id = _seed_uuid("bill-clinton-blvd-001")
     scanned_at = _dt(audit_data.get("scanned_at", "2026-05-22T00:00:00+00:00"))
+    detections = audit_data.get("detections", [])
+    detections_by_frame = index_demo_detections(detections)
+    frame_plan = build_demo_frame_plan()
 
     db.add(
         AuditRun(
@@ -163,22 +236,70 @@ def _seed_audit_run_and_suggestions(db: AsyncSession) -> None:
             route_name=audit_data.get("route_name", "Bill Clinton Boulevard Audit"),
             notes="Seeded from prepared AI street-audit demo results.",
             status=AuditRunStatus.completed,
-            frames_total=int(audit_data.get("total_frames_analyzed", 64)),
-            frames_done=int(audit_data.get("total_frames_analyzed", 64)),
+            frames_total=len(frame_plan),
+            frames_done=len(frame_plan),
             created_at=scanned_at,
             updated_at=scanned_at,
         )
     )
 
-    for index, detection in enumerate(audit_data.get("detections", [])):
+    frame_index_by_key = {
+        _frame_key(
+            float(spec["latitude"]),
+            float(spec["longitude"]),
+            int(spec["heading"]),
+            int(spec["pitch"]),
+        ): int(spec["frame_index"])
+        for spec in frame_plan
+    }
+
+    for frame_spec in frame_plan:
+        frame_index = int(frame_spec["frame_index"])
+        latitude = float(frame_spec["latitude"])
+        longitude = float(frame_spec["longitude"])
+        heading = int(frame_spec["heading"])
+        pitch = int(frame_spec["pitch"])
+        frame_key = _frame_key(latitude, longitude, heading, pitch)
+        detection = detections_by_frame.get(frame_key)
+        regions = regions_from_detection(detection) if detection else None
+
+        db.add(
+            AuditFrame(
+                id=_seed_uuid(f"bill-clinton-blvd-001-frame-{frame_index}"),
+                audit_run_id=run_id,
+                frame_index=frame_index,
+                latitude=latitude,
+                longitude=longitude,
+                heading=heading,
+                pitch=pitch,
+                image_url=_build_street_view_url(latitude, longitude, heading, pitch),
+                is_civic_issue=detection is not None,
+                category=detection["category"] if detection else None,
+                confidence=float(detection["confidence"]) if detection else None,
+                severity=detection.get("severity") if detection else None,
+                description=detection.get("description") if detection else None,
+                detection_regions=regions,
+                model_name=settings.ai_model_name if detection else None,
+                created_at=scanned_at,
+            )
+        )
+
+    for index, detection in enumerate(detections):
         latitude = float(detection["latitude"])
         longitude = float(detection["longitude"])
         heading = int(detection.get("heading", 0))
         pitch = int(detection.get("pitch", 0))
+        frame_key = _frame_key(latitude, longitude, heading, pitch)
+        frame_index = frame_index_by_key.get(frame_key)
+        if frame_index is None:
+            continue
+
+        suggestion_id = _seed_uuid(f"bill-clinton-blvd-001-suggestion-{index}")
+        regions = regions_from_detection(detection)
 
         db.add(
             AuditSuggestion(
-                id=_seed_uuid(f"bill-clinton-blvd-001-suggestion-{index}"),
+                id=suggestion_id,
                 audit_run_id=run_id,
                 category=detection["category"],
                 status=AuditSuggestionStatus.pending_review,
@@ -195,9 +316,48 @@ def _seed_audit_run_and_suggestions(db: AsyncSession) -> None:
                 department=detection.get("department"),
                 heading=heading,
                 pitch=pitch,
+                frame_index=frame_index,
+                detection_regions=regions,
                 created_at=scanned_at,
             )
         )
+
+    _link_seeded_frame_suggestions(db, detections, frame_plan)
+
+
+def _link_seeded_frame_suggestions(
+    db: AsyncSession,
+    detections: list[dict[str, Any]],
+    frame_plan: list[dict[str, float | int]],
+) -> None:
+    frame_index_by_key = {
+        _frame_key(
+            float(spec["latitude"]),
+            float(spec["longitude"]),
+            int(spec["heading"]),
+            int(spec["pitch"]),
+        ): int(spec["frame_index"])
+        for spec in frame_plan
+    }
+
+    for index, detection in enumerate(detections):
+        frame_key = _frame_key(
+            float(detection["latitude"]),
+            float(detection["longitude"]),
+            int(detection.get("heading", 0)),
+            int(detection.get("pitch", 0)),
+        )
+        frame_index = frame_index_by_key.get(frame_key)
+        if frame_index is None:
+            continue
+
+        suggestion_id = _seed_uuid(f"bill-clinton-blvd-001-suggestion-{index}")
+        frame_id = _seed_uuid(f"bill-clinton-blvd-001-frame-{frame_index}")
+
+        for obj in db.new:
+            if isinstance(obj, AuditFrame) and obj.id == frame_id:
+                obj.suggestion_id = suggestion_id
+                break
 
 
 def _load_audit_results() -> dict[str, Any]:
