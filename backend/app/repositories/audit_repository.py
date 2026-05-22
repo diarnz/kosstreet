@@ -5,7 +5,7 @@ from geoalchemy2.functions import ST_MakePoint
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.audit import AuditRun, AuditSuggestion
+from app.models.audit import AuditFrame, AuditRun, AuditSuggestion
 from app.models.enums import AuditRunStatus, AuditSuggestionStatus
 from app.schemas.audit import AuditRunCreate
 
@@ -109,6 +109,8 @@ class AuditSuggestionRepository:
                 department=s.get("department"),
                 heading=s.get("heading"),
                 pitch=s.get("pitch"),
+                frame_index=s.get("frame_index"),
+                detection_regions=s.get("detection_regions"),
                 created_at=s.get("created_at", datetime.now(timezone.utc)),
             )
             self.db.add(obj)
@@ -136,3 +138,65 @@ class AuditSuggestionRepository:
         suggestion.converted_report_id = report_id
         await self.db.flush()
         return suggestion
+
+
+class AuditFrameRepository:
+    def __init__(self, db: AsyncSession) -> None:
+        self.db = db
+
+    async def list_for_run(self, run_id: uuid.UUID) -> list[AuditFrame]:
+        result = await self.db.execute(
+            select(AuditFrame)
+            .where(AuditFrame.audit_run_id == run_id)
+            .order_by(AuditFrame.frame_index.asc())
+        )
+        return list(result.scalars().all())
+
+    async def get_for_run(
+        self,
+        run_id: uuid.UUID,
+        frame_index: int,
+    ) -> AuditFrame | None:
+        result = await self.db.execute(
+            select(AuditFrame).where(
+                AuditFrame.audit_run_id == run_id,
+                AuditFrame.frame_index == frame_index,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def create(self, data: dict) -> AuditFrame:
+        frame = AuditFrame(
+            id=uuid.uuid4(),
+            audit_run_id=data["audit_run_id"],
+            frame_index=data["frame_index"],
+            latitude=data["latitude"],
+            longitude=data["longitude"],
+            heading=data["heading"],
+            pitch=data.get("pitch", 0),
+            image_url=data["image_url"],
+            is_civic_issue=data.get("is_civic_issue", False),
+            category=data.get("category"),
+            confidence=data.get("confidence"),
+            severity=data.get("severity"),
+            description=data.get("description"),
+            detection_regions=data.get("detection_regions"),
+            model_name=data.get("model_name"),
+            suggestion_id=data.get("suggestion_id"),
+            created_at=data.get("created_at", datetime.now(timezone.utc)),
+        )
+        self.db.add(frame)
+        await self.db.flush()
+        return frame
+
+    async def set_suggestion_id(
+        self,
+        frame_id: uuid.UUID,
+        suggestion_id: uuid.UUID,
+    ) -> None:
+        result = await self.db.execute(select(AuditFrame).where(AuditFrame.id == frame_id))
+        frame = result.scalar_one_or_none()
+        if frame is None:
+            return
+        frame.suggestion_id = suggestion_id
+        await self.db.flush()

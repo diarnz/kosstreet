@@ -15,7 +15,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.46,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -28,7 +35,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.49,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -41,7 +55,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.52,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -54,7 +75,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.55,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -67,7 +95,14 @@
       "heading": 90,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.58,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -80,7 +115,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.49,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -93,7 +135,14 @@
       "heading": 270,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.64,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -106,7 +155,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.55,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -119,7 +175,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.46,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -132,7 +195,14 @@
       "heading": 90,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.61,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -145,7 +215,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.52,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -158,7 +235,14 @@
       "heading": 270,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.67,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -171,7 +255,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.46,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -184,7 +275,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.49,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -197,7 +295,14 @@
       "heading": 90,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.64,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -210,7 +315,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.55,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -223,7 +335,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.46,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -236,7 +355,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.49,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -249,7 +375,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.52,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "pothole",
@@ -262,7 +395,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Roads / Public Works",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.55,
+          "center_y": 0.72,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -275,7 +415,14 @@
       "heading": 90,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.58,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -288,7 +435,14 @@
       "heading": 90,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.61,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -301,7 +455,14 @@
       "heading": 270,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.64,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -314,7 +475,14 @@
       "heading": 270,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.67,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -327,7 +495,14 @@
       "heading": 90,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.58,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "garbage",
@@ -340,7 +515,14 @@
       "heading": 270,
       "pitch": 0,
       "department": "Sanitation",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.28,
+          "center_y": 0.61,
+          "radius": 0.09
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -353,7 +535,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.48,
+          "center_y": 0.27,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -366,7 +555,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.51,
+          "center_y": 0.24,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -379,7 +575,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.42,
+          "center_y": 0.27,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -392,7 +595,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.45,
+          "center_y": 0.24,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -405,7 +615,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.48,
+          "center_y": 0.27,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -418,7 +635,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.51,
+          "center_y": 0.24,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -431,7 +655,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.42,
+          "center_y": 0.27,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -444,7 +675,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.45,
+          "center_y": 0.24,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -457,7 +695,14 @@
       "heading": 180,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.48,
+          "center_y": 0.27,
+          "radius": 0.12
+        }
+      ]
     },
     {
       "category": "broken_streetlight",
@@ -470,7 +715,14 @@
       "heading": 0,
       "pitch": 0,
       "department": "Electrical / Infrastructure",
-      "source": "street_audit"
+      "source": "street_audit",
+      "regions": [
+        {
+          "center_x": 0.51,
+          "center_y": 0.24,
+          "radius": 0.12
+        }
+      ]
     }
   ],
   "summary": {

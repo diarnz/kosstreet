@@ -44,12 +44,24 @@
     </AppCard>
 
     <template v-else-if="suggestion">
+      <AnalyzedFrameViewer
+        :category="suggestion.category"
+        :confidence="suggestion.confidence"
+        :description="suggestion.description"
+        :frame-index="suggestion.frame_index"
+        :heading="suggestion.heading"
+        :image-url="suggestion.frame_image_url"
+        :pitch="suggestion.pitch"
+        :regions="suggestion.detection_regions"
+        :severity="suggestion.severity"
+      />
+
       <StreetViewPanel
         compact
-        eyebrow="AI Street View evidence"
+        eyebrow="Geographic context"
         :record-count="1"
         :target="streetViewTarget"
-        title="Model detection context"
+        title="Interactive Street View"
       />
 
       <AuditSuggestionCard
@@ -82,6 +94,7 @@ import AppCard from '@/components/common/AppCard.vue';
 import AppEmptyState from '@/components/common/AppEmptyState.vue';
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
 import AuditSuggestionCard from '@/components/audit/AuditSuggestionCard.vue';
+import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import StreetViewPanel from '@/components/streetview/StreetViewPanel.vue';
 import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';

@@ -19,6 +19,7 @@ export const auditSuggestionEndpoints = {
   detail: '/api/v1/audit-suggestions/:id',
   review: '/api/v1/audit-suggestions/:id',
   convertToReport: '/api/v1/audit-suggestions/:id/convert-to-report',
+  frameImage: '/api/v1/audit-suggestions/:id/frame-image',
 } as const;
 
 export function listAuditSuggestions(runId: string): Promise<AuditSuggestion[]> {

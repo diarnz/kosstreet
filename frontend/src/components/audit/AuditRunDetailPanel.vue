@@ -53,6 +53,12 @@
         </p>
       </AppCard>
 
+      <AuditFrameBrowser
+        v-if="!isDemoData && run"
+        :run-id="run.id"
+        :run-status="run.status"
+      />
+
       <AuditSuggestionList
         v-if="!isDemoData"
         :convert-error-by-id="convertErrorById"
@@ -93,6 +99,7 @@ import type { AuditRunSummary } from '@/types/audit';
 import type { AuditSuggestion, AuditSuggestionReviewPayload } from '@/types/detection';
 import { auditRunStatusDescriptions, formatAuditDateTime } from '@/utils/auditFormatting';
 import AuditSuggestionList from './AuditSuggestionList.vue';
+import AuditFrameBrowser from './AuditFrameBrowser.vue';
 import AuditRunStatusPill from './AuditRunStatusPill.vue';
 
 withDefaults(
