@@ -50,6 +50,15 @@ class GoogleStreetViewClient:
         query = httpx.QueryParams(self._build_params(request))
         return f"{self.base_url}?{query}"
 
+    def fetch_frame_by_url(self, image_url: str) -> StreetImageryFrame:
+        response = httpx.get(image_url, timeout=30)
+        response.raise_for_status()
+        return StreetImageryFrame(
+            source="google_sv",
+            content_type=response.headers.get("content-type", "image/jpeg"),
+            data=response.content,
+        )
+
     def _build_params(self, request: StreetImageryFrameRequest) -> dict[str, str | int]:
         return {
             "size": f"{self.size}x{self.size}",

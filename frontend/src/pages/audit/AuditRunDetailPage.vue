@@ -51,10 +51,12 @@ import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
 import AuditRunDetailPanel from '@/components/audit/AuditRunDetailPanel.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { useAuditSuggestionsStore } from '@/stores/auditSuggestions';
+import { useAuditFramesStore } from '@/stores/auditFrames';
 import type { AuditRunSummary } from '@/types/audit';
 
 const route = useRoute();
 const auditSuggestionsStore = useAuditSuggestionsStore();
+const auditFramesStore = useAuditFramesStore();
 
 const runId = computed(() => String(route.params.runId));
 const run = ref<AuditRunSummary | null>(null);
@@ -71,7 +73,10 @@ async function loadRun() {
 
   try {
     run.value = await getAuditRun(runId.value);
-    await auditSuggestionsStore.fetchForRun(runId.value);
+    await Promise.all([
+      auditSuggestionsStore.fetchForRun(runId.value),
+      auditFramesStore.fetchForRun(runId.value),
+    ]);
   } catch (loadError) {
     error.value = loadError instanceof Error ? loadError.message : 'Could not load audit run.';
     run.value = null;

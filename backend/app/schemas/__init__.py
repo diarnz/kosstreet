@@ -1,4 +1,6 @@
 from app.schemas.audit import (
+    AuditFrameDetail,
+    AuditFrameSummary,
     AuditRunCreate,
     AuditRunSummary,
     AuditSuggestionRead,
@@ -6,6 +8,7 @@ from app.schemas.audit import (
     SuggestionConversionResult,
 )
 from app.schemas.report import (
+    DetectionRegion,
     ImageAnalysisResult,
     ReportCreate,
     ReportDetail,
@@ -20,7 +23,10 @@ __all__ = [
     "ReportSummary",
     "ReportDetail",
     "WorkflowEventRead",
+    "DetectionRegion",
     "ImageAnalysisResult",
+    "AuditFrameDetail",
+    "AuditFrameSummary",
     "AuditRunCreate",
     "AuditRunSummary",
     "AuditSuggestionRead",
