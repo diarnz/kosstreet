@@ -70,7 +70,21 @@
         @select="auditRunsStore.selectRun"
       />
 
-      <AuditRunDetailPanel :is-demo-data="auditRunsStore.usingDemoRuns" :run="auditRunsStore.selectedRun" />
+      <AuditRunDetailPanel
+        :convert-error-by-id="auditSuggestionsStore.convertErrorById"
+        :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
+        :converted-report-by-suggestion-id="auditSuggestionsStore.convertedReportBySuggestionId"
+        :is-demo-data="auditRunsStore.usingDemoRuns"
+        :review-error-by-id="auditSuggestionsStore.reviewErrorById"
+        :review-loading-by-id="auditSuggestionsStore.reviewLoadingById"
+        :run="auditRunsStore.selectedRun"
+        :suggestions="selectedRunSuggestions"
+        :suggestions-error="selectedRunSuggestionsError"
+        :suggestions-loading="selectedRunSuggestionsLoading"
+        @convert-suggestion="auditSuggestionsStore.convertSuggestionToReport"
+        @refresh-suggestions="refreshSelectedRunSuggestions"
+        @review-suggestion="auditSuggestionsStore.reviewSuggestion"
+      />
     </section>
 
     <DemoAuditSuggestionPanel
@@ -81,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
@@ -96,16 +110,46 @@ import AuditRunQueue from '@/components/audit/AuditRunQueue.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
 import { useAuditRunsStore } from '@/stores/auditRuns';
+import { useAuditSuggestionsStore } from '@/stores/auditSuggestions';
 import { useUiStore } from '@/stores/ui';
 import { formatAuditDateTime } from '@/utils/auditFormatting';
 
 const auditRunsStore = useAuditRunsStore();
+const auditSuggestionsStore = useAuditSuggestionsStore();
 const uiStore = useUiStore();
 
 const principles = ['Suggested, not automatic', 'Confidence shown when returned', 'Human verified', 'Ticket-ready after backend conversion'];
+let pollingTimer: number | undefined;
+
+const selectedRunSuggestions = computed(() =>
+  auditSuggestionsStore.suggestionsForRun(auditRunsStore.selectedRunId),
+);
+const selectedRunSuggestionsLoading = computed(() =>
+  auditSuggestionsStore.isLoadingForRun(auditRunsStore.selectedRunId),
+);
+const selectedRunSuggestionsError = computed(() =>
+  auditSuggestionsStore.errorForRun(auditRunsStore.selectedRunId),
+);
 
 onMounted(() => {
   void auditRunsStore.fetchRuns();
+  pollingTimer = window.setInterval(() => {
+    const selectedRun = auditRunsStore.selectedRun;
+    if (!selectedRun || auditRunsStore.usingDemoRuns) {
+      return;
+    }
+
+    if (selectedRun.status === 'queued' || selectedRun.status === 'running') {
+      void auditRunsStore.fetchRuns();
+      void auditSuggestionsStore.fetchForRun(selectedRun.id);
+    }
+  }, 8000);
+});
+
+onUnmounted(() => {
+  if (pollingTimer !== undefined) {
+    window.clearInterval(pollingTimer);
+  }
 });
 
 watch(
@@ -117,6 +161,21 @@ watch(
   },
   { immediate: true },
 );
+
+watch(
+  () => auditRunsStore.selectedRunId,
+  (runId) => {
+    if (runId && !auditRunsStore.usingDemoRuns) {
+      void auditSuggestionsStore.fetchForRun(runId);
+    }
+  },
+);
+
+function refreshSelectedRunSuggestions() {
+  if (auditRunsStore.selectedRunId) {
+    void auditSuggestionsStore.fetchForRun(auditRunsStore.selectedRunId);
+  }
+}
 </script>
 
 <style scoped>

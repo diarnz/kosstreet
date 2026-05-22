@@ -39,11 +39,10 @@
       @update:status="reportsStore.setStatus"
     />
 
-    <ReportMap
+    <StreetViewPanel
       :is-loading="reportsStore.isLoading"
-      :reports="reportsStore.filteredReports"
-      :selected-report-id="reportsStore.selectedReportId"
-      @select="reportsStore.selectReport"
+      :record-count="reportsStore.filteredReports.length"
+      :target="selectedStreetViewTarget"
     />
 
     <section class="dashboard-workspace">
@@ -72,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
@@ -82,12 +81,23 @@ import DashboardFilters from '@/components/dashboard/DashboardFilters.vue';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue';
 import ReportDetailPanel from '@/components/dashboard/ReportDetailPanel.vue';
 import ReportQueue from '@/components/dashboard/ReportQueue.vue';
-import ReportMap from '@/components/maps/ReportMap.vue';
+import StreetViewPanel from '@/components/streetview/StreetViewPanel.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { useReportsStore } from '@/stores/reports';
 import { formatDateTime } from '@/utils/reportFormatting';
+import { hasValidCoordinates, reportToStreetViewTarget } from '@/utils/streetView';
 
 const reportsStore = useReportsStore();
+
+const selectedStreetViewTarget = computed(() => {
+  const selectedReport = reportsStore.selectedReport;
+  if (selectedReport && hasValidCoordinates(selectedReport)) {
+    return reportToStreetViewTarget(selectedReport);
+  }
+
+  const firstMappableReport = reportsStore.mappableFilteredReports[0];
+  return firstMappableReport ? reportToStreetViewTarget(firstMappableReport) : null;
+});
 
 onMounted(() => {
   void reportsStore.fetchReports();

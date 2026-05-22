@@ -30,6 +30,11 @@ export interface AuditSuggestion {
   explanation?: string | null;
   image_url?: string | null;
   image_attribution?: string | null;
+  department?: string | null;
+  heading?: number | null;
+  pitch?: number | null;
+  reviewer_note?: string | null;
+  converted_report_id?: string | null;
   bounding_box?: BoundingBox | null;
   created_at: string;
 }

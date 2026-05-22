@@ -24,9 +24,34 @@
           v-model="routeName"
           aria-label="Route or segment name"
           :disabled="isCreating"
-          placeholder="Bill Clinton Boulevard demo segment"
+          placeholder="Bill Clinton Boulevard, or leave empty if using coordinates"
         />
       </AppField>
+
+      <div class="audit-run-form__coordinate-grid">
+        <AppField label="Latitude">
+          <AppInput
+            v-model="latitude"
+            aria-label="Audit latitude"
+            :disabled="isCreating"
+            placeholder="42.6596"
+          />
+        </AppField>
+
+        <AppField label="Longitude">
+          <AppInput
+            v-model="longitude"
+            aria-label="Audit longitude"
+            :disabled="isCreating"
+            placeholder="21.1545"
+          />
+        </AppField>
+      </div>
+
+      <p class="audit-run-form__hint">
+        Use either a route name or both coordinates. Coordinate audits scan that exact point across
+        the configured Street View headings.
+      </p>
 
       <AppField label="Notes">
         <AppTextarea
@@ -71,9 +96,25 @@ const emit = defineEmits<{
 
 const municipality = ref('Prishtina');
 const routeName = ref('');
+const latitude = ref('');
+const longitude = ref('');
 const notes = ref('');
 
-const canSubmit = computed(() => municipality.value.trim().length > 0 && routeName.value.trim().length > 0);
+const parsedLatitude = computed(() => Number(latitude.value.trim()));
+const parsedLongitude = computed(() => Number(longitude.value.trim()));
+const hasRoute = computed(() => routeName.value.trim().length > 0);
+const hasCoordinates = computed(
+  () =>
+    latitude.value.trim().length > 0 &&
+    longitude.value.trim().length > 0 &&
+    Number.isFinite(parsedLatitude.value) &&
+    Number.isFinite(parsedLongitude.value) &&
+    parsedLatitude.value >= -90 &&
+    parsedLatitude.value <= 90 &&
+    parsedLongitude.value >= -180 &&
+    parsedLongitude.value <= 180,
+);
+const canSubmit = computed(() => municipality.value.trim().length > 0 && (hasRoute.value || hasCoordinates.value));
 
 function submit() {
   if (!canSubmit.value || props.isCreating) {
@@ -82,7 +123,9 @@ function submit() {
 
   emit('create', {
     municipality: municipality.value.trim(),
-    route_name: routeName.value.trim(),
+    route_name: hasRoute.value ? routeName.value.trim() : null,
+    latitude: hasCoordinates.value ? parsedLatitude.value : null,
+    longitude: hasCoordinates.value ? parsedLongitude.value : null,
     notes: notes.value.trim() ? notes.value.trim() : null,
   });
 }
@@ -103,8 +146,25 @@ function submit() {
   gap: var(--space-4);
 }
 
+.audit-run-form__coordinate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.audit-run-form__hint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
 .audit-run-form__error {
   display: grid;
   gap: var(--space-2);
+}
+
+@media (max-width: 620px) {
+  .audit-run-form__coordinate-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
