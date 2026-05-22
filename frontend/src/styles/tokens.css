@@ -1,0 +1,137 @@
+:root {
+  --color-ink: #17211a;
+  --color-municipal-green: #2f5d50;
+  --color-sage-surface: #dde8d5;
+  --color-warm-stone: #f4efe4;
+  --color-paper: #fffdf7;
+  --color-road-graphite: #3a3f3b;
+  --color-amber-signal: #d9902f;
+  --color-repair-red: #c84c3a;
+  --color-resolved-blue: #3f6e8c;
+  --color-muted-line: #d7d0c2;
+
+  --color-success-surface: #e4eee3;
+  --color-warning-surface: #f8ead4;
+  --color-danger-surface: #f5ded9;
+  --color-info-surface: #dde8ee;
+  --color-ai-surface: #e8e2d4;
+  --color-critical-red: #8f2d25;
+  --color-sidewalk-blue: #6f8794;
+  --color-garbage-green: #527866;
+  --color-sign-orange: #bf6841;
+
+  --surface-app: var(--color-warm-stone);
+  --surface-panel: rgba(255, 253, 247, 0.86);
+  --surface-panel-strong: var(--color-paper);
+  --surface-muted: rgba(221, 232, 213, 0.46);
+  --surface-inset: rgba(244, 239, 228, 0.68);
+  --surface-map-placeholder: rgba(58, 63, 59, 0.08);
+
+  --text-primary: var(--color-ink);
+  --text-secondary: rgba(58, 63, 59, 0.82);
+  --text-muted: rgba(58, 63, 59, 0.64);
+  --text-inverse: var(--color-paper);
+
+  --action-primary: var(--color-municipal-green);
+  --action-primary-hover: #244c42;
+  --action-secondary: rgba(255, 253, 247, 0.7);
+  --action-danger: var(--color-repair-red);
+
+  --status-new-text: var(--color-road-graphite);
+  --status-new-surface: rgba(58, 63, 59, 0.08);
+  --status-new-border: rgba(58, 63, 59, 0.18);
+  --status-verified-text: var(--color-resolved-blue);
+  --status-verified-surface: var(--color-info-surface);
+  --status-verified-border: rgba(63, 110, 140, 0.22);
+  --status-assigned-text: var(--color-municipal-green);
+  --status-assigned-surface: var(--color-success-surface);
+  --status-assigned-border: rgba(47, 93, 80, 0.22);
+  --status-in-progress-text: #7b511b;
+  --status-in-progress-surface: var(--color-warning-surface);
+  --status-in-progress-border: rgba(217, 144, 47, 0.26);
+  --status-resolved-text: #245143;
+  --status-resolved-surface: #dcecdf;
+  --status-resolved-border: rgba(36, 81, 67, 0.2);
+  --status-rejected-text: #833127;
+  --status-rejected-surface: var(--color-danger-surface);
+  --status-rejected-border: rgba(200, 76, 58, 0.2);
+
+  --severity-low-text: var(--color-municipal-green);
+  --severity-low-surface: var(--color-success-surface);
+  --severity-low-border: rgba(47, 93, 80, 0.2);
+  --severity-medium-text: #7b511b;
+  --severity-medium-surface: var(--color-warning-surface);
+  --severity-medium-border: rgba(217, 144, 47, 0.26);
+  --severity-high-text: #833127;
+  --severity-high-surface: var(--color-danger-surface);
+  --severity-high-border: rgba(200, 76, 58, 0.22);
+  --severity-critical-text: #6f201a;
+  --severity-critical-surface: #efd0ca;
+  --severity-critical-border: rgba(143, 45, 37, 0.32);
+
+  --source-citizen-text: var(--color-municipal-green);
+  --source-citizen-surface: var(--color-success-surface);
+  --source-citizen-border: rgba(47, 93, 80, 0.2);
+  --source-ai-audit-text: #665129;
+  --source-ai-audit-surface: var(--color-ai-surface);
+  --source-ai-audit-border: rgba(102, 81, 41, 0.2);
+
+  --category-pothole-text: var(--color-road-graphite);
+  --category-pothole-surface: rgba(58, 63, 59, 0.1);
+  --category-pothole-border: rgba(58, 63, 59, 0.18);
+  --category-garbage-text: #395c4c;
+  --category-garbage-surface: #e0ebdf;
+  --category-garbage-border: rgba(82, 120, 102, 0.22);
+  --category-broken-streetlight-text: #80531b;
+  --category-broken-streetlight-surface: #faecd4;
+  --category-broken-streetlight-border: rgba(217, 144, 47, 0.24);
+  --category-blocked-sidewalk-text: #405f70;
+  --category-blocked-sidewalk-surface: #e1eaee;
+  --category-blocked-sidewalk-border: rgba(111, 135, 148, 0.22);
+  --category-damaged-sign-text: #86402c;
+  --category-damaged-sign-surface: #f3ddd4;
+  --category-damaged-sign-border: rgba(191, 104, 65, 0.24);
+  --category-other-text: var(--color-road-graphite);
+  --category-other-surface: rgba(215, 208, 194, 0.35);
+  --category-other-border: rgba(58, 63, 59, 0.14);
+
+  --font-sans: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Aptos Display", "Aptos", "Segoe UI", sans-serif;
+
+  --text-xs: 0.78rem;
+  --text-sm: 0.9rem;
+  --text-md: 1rem;
+  --text-lg: 1.1rem;
+  --text-xl: 1.35rem;
+  --text-2xl: clamp(2rem, 6vw, 4.8rem);
+  --text-3xl: clamp(3rem, 8vw, 6.4rem);
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 18px 60px rgba(23, 33, 26, 0.11);
+  --shadow-card: 0 12px 36px rgba(23, 33, 26, 0.08);
+  --shadow-command: 0 26px 80px rgba(23, 33, 26, 0.13);
+  --shadow-inset: inset 0 1px 0 rgba(255, 253, 247, 0.7);
+  --shadow-focus: 0 0 0 4px rgba(47, 93, 80, 0.18);
+
+  --border-soft: 1px solid rgba(23, 33, 26, 0.12);
+  --border-strong: 1px solid rgba(23, 33, 26, 0.22);
+
+  --z-nav: 20;
+  --z-overlay: 50;
+}

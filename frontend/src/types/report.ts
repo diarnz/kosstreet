@@ -14,14 +14,25 @@ export type TicketStatus =
   | 'resolved'
   | 'rejected';
 
+export type ReportSource = 'citizen' | 'street_audit';
+
 export interface ReportSummary {
   id: string;
   category: IssueCategory;
   status: TicketStatus;
   latitude: number;
   longitude: number;
-  source: 'citizen' | 'street_audit';
+  source: ReportSource;
+  description?: string | null;
   confidence?: number;
   created_at: string;
 }
 
+export interface ReportCreatePayload {
+  category: IssueCategory;
+  latitude: number;
+  longitude: number;
+  source: 'citizen';
+  description?: string;
+  confidence?: number;
+}
