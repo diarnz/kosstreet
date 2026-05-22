@@ -1,31 +1,9 @@
-from datetime import datetime, timezone
-from enum import StrEnum
-from uuid import UUID, uuid4
+from datetime import datetime
+from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
-
-class IssueCategory(StrEnum):
-    pothole = "pothole"
-    garbage = "garbage"
-    broken_streetlight = "broken_streetlight"
-    blocked_sidewalk = "blocked_sidewalk"
-    damaged_sign = "damaged_sign"
-    other = "other"
-
-
-class TicketStatus(StrEnum):
-    new = "new"
-    verified = "verified"
-    assigned = "assigned"
-    in_progress = "in_progress"
-    resolved = "resolved"
-    rejected = "rejected"
-
-
-class ReportSource(StrEnum):
-    citizen = "citizen"
-    street_audit = "street_audit"
+from app.models.enums import AuditSuggestionSeverity, IssueCategory, ReportSource, TicketStatus
 
 
 class ReportCreate(BaseModel):
@@ -37,8 +15,48 @@ class ReportCreate(BaseModel):
     confidence: float | None = Field(default=None, ge=0, le=1)
 
 
-class ReportRead(ReportCreate):
-    id: UUID = Field(default_factory=uuid4)
-    status: TicketStatus = TicketStatus.new
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+class ReportStatusUpdate(BaseModel):
+    status: TicketStatus
+    note: str | None = None
 
+
+class WorkflowEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    report_id: UUID
+    from_status: TicketStatus | None
+    to_status: TicketStatus
+    note: str | None
+    created_at: datetime
+    actor_type: str
+    actor_label: str
+
+
+class ReportSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    category: IssueCategory
+    status: TicketStatus
+    latitude: float
+    longitude: float
+    source: ReportSource
+    description: str | None
+    confidence: float | None
+    created_at: datetime
+
+
+class ReportDetail(ReportSummary):
+    updated_at: datetime
+    resolution_note: str | None
+    rejection_reason: str | None
+    workflow_events: list[WorkflowEventRead]
+
+
+class ImageAnalysisResult(BaseModel):
+    category: IssueCategory | None = None
+    confidence: float | None = None
+    severity: AuditSuggestionSeverity | None = None
+    description: str | None = None
+    is_civic_issue: bool = False

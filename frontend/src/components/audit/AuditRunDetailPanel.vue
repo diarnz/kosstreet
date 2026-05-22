@@ -29,6 +29,10 @@
           <dt>Status meaning</dt>
           <dd>{{ auditRunStatusDescriptions[run.status] }}</dd>
         </div>
+        <div>
+          <dt>Pipeline progress</dt>
+          <dd>{{ run.frames_done }} / {{ run.frames_total }} frames</dd>
+        </div>
         <div class="audit-run-detail__wide">
           <dt>Notes</dt>
           <dd>{{ run.notes || 'No notes provided.' }}</dd>
@@ -49,7 +53,27 @@
         </p>
       </AppCard>
 
-      <AuditSuggestionUnavailablePanel />
+      <AuditSuggestionList
+        v-if="!isDemoData"
+        :convert-error-by-id="convertErrorById"
+        :convert-loading-by-id="convertLoadingById"
+        :converted-report-by-suggestion-id="convertedReportBySuggestionId"
+        :error="suggestionsError"
+        :is-loading="suggestionsLoading"
+        :review-error-by-id="reviewErrorById"
+        :review-loading-by-id="reviewLoadingById"
+        :suggestions="suggestions"
+        @convert="$emit('convertSuggestion', $event)"
+        @refresh="$emit('refreshSuggestions')"
+        @review="(suggestionId, payload) => $emit('reviewSuggestion', suggestionId, payload)"
+      />
+
+      <AppEmptyState
+        v-else
+        tone="audit"
+        title="Demo run selected"
+        description="Pitch Mode demo suggestions are shown in the separate demo panel. Live suggestion review is only available for backend audit runs."
+      />
     </template>
 
     <AppEmptyState
@@ -66,19 +90,42 @@ import AppBadge from '@/components/common/AppBadge.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import AppEmptyState from '@/components/common/AppEmptyState.vue';
 import type { AuditRunSummary } from '@/types/audit';
+import type { AuditSuggestion, AuditSuggestionReviewPayload } from '@/types/detection';
 import { auditRunStatusDescriptions, formatAuditDateTime } from '@/utils/auditFormatting';
+import AuditSuggestionList from './AuditSuggestionList.vue';
 import AuditRunStatusPill from './AuditRunStatusPill.vue';
-import AuditSuggestionUnavailablePanel from './AuditSuggestionUnavailablePanel.vue';
 
 withDefaults(
   defineProps<{
     run: AuditRunSummary | null;
     isDemoData?: boolean;
+    suggestions?: AuditSuggestion[];
+    suggestionsLoading?: boolean;
+    suggestionsError?: string | null;
+    reviewLoadingById?: Record<string, boolean>;
+    reviewErrorById?: Record<string, string | null>;
+    convertLoadingById?: Record<string, boolean>;
+    convertErrorById?: Record<string, string | null>;
+    convertedReportBySuggestionId?: Record<string, string>;
   }>(),
   {
     isDemoData: false,
+    suggestions: () => [],
+    suggestionsLoading: false,
+    suggestionsError: null,
+    reviewLoadingById: () => ({}),
+    reviewErrorById: () => ({}),
+    convertLoadingById: () => ({}),
+    convertErrorById: () => ({}),
+    convertedReportBySuggestionId: () => ({}),
   },
 );
+
+defineEmits<{
+  refreshSuggestions: [];
+  reviewSuggestion: [suggestionId: string, payload: AuditSuggestionReviewPayload];
+  convertSuggestion: [suggestionId: string];
+}>();
 </script>
 
 <style scoped>

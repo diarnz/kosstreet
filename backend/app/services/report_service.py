@@ -1,17 +1,113 @@
+from uuid import UUID
+
+from fastapi import HTTPException, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
+from app.models.enums import IssueCategory, ReportSource, TicketStatus
+from app.models.report import Report
 from app.repositories.report_repository import ReportRepository
-from app.schemas.report import ReportCreate, ReportRead
+from app.schemas.report import ImageAnalysisResult, ReportCreate, ReportStatusUpdate
+from app.services.ai_service import AIService
+from app.storage.local import LocalFileStorage
+
+DEPARTMENT_MAP: dict[IssueCategory, str] = {
+    IssueCategory.pothole: "Roads / Public Works",
+    IssueCategory.garbage: "Sanitation",
+    IssueCategory.broken_streetlight: "Electrical / Infrastructure",
+    IssueCategory.blocked_sidewalk: "Roads / Public Works",
+    IssueCategory.damaged_sign: "Roads / Public Works",
+    IssueCategory.other: "General Services",
+}
+
+VALID_TRANSITIONS: dict[TicketStatus, set[TicketStatus]] = {
+    TicketStatus.new: {TicketStatus.verified, TicketStatus.rejected},
+    TicketStatus.verified: {TicketStatus.assigned, TicketStatus.rejected},
+    TicketStatus.assigned: {TicketStatus.in_progress, TicketStatus.rejected},
+    TicketStatus.in_progress: {TicketStatus.resolved, TicketStatus.rejected},
+    TicketStatus.resolved: set(),
+    TicketStatus.rejected: set(),
+}
 
 
 class ReportService:
-    def __init__(self, repository: ReportRepository) -> None:
-        self.repository = repository
+    def __init__(self, db: AsyncSession) -> None:
+        self.repository = ReportRepository(db)
+        self.storage = LocalFileStorage(settings.upload_dir)
+        self.ai_service = AIService(settings)
 
-    def list_reports(self) -> list[ReportRead]:
-        return self.repository.list()
+    async def list_reports(
+        self,
+        *,
+        status_filter: TicketStatus | None = None,
+        category: IssueCategory | None = None,
+        source: ReportSource | None = None,
+    ) -> list[Report]:
+        return await self.repository.list(
+            status=status_filter,
+            category=category,
+            source=source,
+        )
 
-    def create_report(self, payload: ReportCreate) -> ReportRead:
-        return self.repository.create(payload)
+    async def create_report(
+        self,
+        payload: ReportCreate,
+        image: UploadFile | None = None,
+    ) -> Report:
+        image_path = await self.storage.save(image) if image else None
+        return await self.repository.create(payload, image_path=image_path)
+
+    async def get_report_detail(self, report_id: UUID) -> Report:
+        report = await self.repository.get_with_events(report_id)
+        if report is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Report not found",
+            )
+        return report
+
+    async def update_status(
+        self,
+        report_id: UUID,
+        payload: ReportStatusUpdate,
+    ) -> Report:
+        report = await self.get_report_detail(report_id)
+        current_status = TicketStatus(report.status)
+        allowed_statuses = VALID_TRANSITIONS[current_status]
+
+        if payload.status not in allowed_statuses:
+            allowed = ", ".join(status.value for status in sorted(allowed_statuses)) or "none"
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Cannot move from '{current_status.value}' to '{payload.status.value}'. "
+                    f"Allowed next statuses: {allowed}."
+                ),
+            )
+
+        await self.repository.update_status(
+            report,
+            payload.status,
+            note=payload.note,
+        )
+        refreshed = await self.repository.get_with_events(report_id)
+        if refreshed is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Report not found",
+            )
+        return refreshed
+
+    async def analyze_image(self, image: UploadFile) -> ImageAnalysisResult:
+        try:
+            return await self.ai_service.analyze_upload(image)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
 
 
-report_service = ReportService(repository=ReportRepository())
+def get_department_for_category(category: IssueCategory) -> str:
+    return DEPARTMENT_MAP[category]
 
