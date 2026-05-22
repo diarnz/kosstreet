@@ -1,36 +1,44 @@
 <template>
-  <nav class="primary-nav" aria-label="Primary navigation">
-    <RouterLink class="primary-nav__brand" to="/">
-      <span class="primary-nav__mark" aria-hidden="true" />
-      <span>
-        KoStreet
-        <small>Prishtina civic intelligence</small>
-      </span>
-    </RouterLink>
-    <div class="primary-nav__links">
-      <RouterLink v-for="item in items" :key="item.to" class="primary-nav__link" :to="item.to">
-        {{ item.label }}
+  <header class="site-header">
+    <div class="site-header__inner">
+      <RouterLink class="site-header__brand" to="/" aria-label="KoStreet home">
+        <AppLogo size="sm" />
       </RouterLink>
+
+      <nav class="site-header__nav" aria-label="Primary navigation">
+        <RouterLink
+          v-for="item in items"
+          :key="item.to"
+          class="site-header__link"
+          :to="item.to"
+        >
+          <span class="site-header__link-text">{{ item.label }}</span>
+        </RouterLink>
+      </nav>
+
       <button
-        class="primary-nav__demo-toggle"
-        :class="{ 'primary-nav__demo-toggle--active': uiStore.demoMode }"
+        class="site-header__demo"
+        :class="{ 'site-header__demo--active': uiStore.demoMode }"
         :aria-pressed="uiStore.demoMode"
-        :aria-label="uiStore.demoMode ? 'Disable Pitch Mode' : 'Enable Pitch Mode'"
+        :aria-label="uiStore.demoMode ? 'Demo mode on' : 'Demo mode off'"
         type="button"
         @click="uiStore.toggleDemoMode"
       >
-        {{ uiStore.demoMode ? 'Pitch Mode On' : 'Pitch Mode' }}
+        Demo
       </button>
     </div>
-  </nav>
+    <div class="site-header__shine" aria-hidden="true" />
+  </header>
 </template>
 
 <script setup lang="ts">
+import AppLogo from '@/components/common/AppLogo.vue';
 import { useUiStore } from '@/stores/ui';
 
 const uiStore = useUiStore();
 
 const items = [
+  { to: '/', label: 'Home' },
   { to: '/report', label: 'Report' },
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/audit', label: 'Street Audit' },
@@ -38,110 +46,145 @@ const items = [
 </script>
 
 <style scoped>
-.primary-nav {
-  position: relative;
+.site-header {
+  position: sticky;
+  top: 0;
   z-index: var(--z-nav);
+  border-bottom: 1px solid rgba(255, 253, 247, 0.45);
+  background: rgba(255, 253, 247, 0.72);
+  backdrop-filter: blur(20px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(23, 33, 26, 0.06);
+}
+
+.site-header__shine {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 253, 247, 0.95), transparent);
+  pointer-events: none;
+}
+
+.site-header__inner {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-4);
   align-items: center;
   justify-content: space-between;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0.35rem;
-  border: 1px solid rgba(23, 33, 26, 0.08);
-  border-radius: calc(var(--radius-pill) + 0.35rem);
-  background: rgba(255, 253, 247, 0.52);
-  backdrop-filter: blur(12px);
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: 0.65rem clamp(1rem, 4vw, 2.5rem);
 }
 
-.primary-nav__brand,
-.primary-nav__link,
-.primary-nav__demo-toggle {
+.site-header__brand {
+  flex-shrink: 0;
+  transition: transform var(--motion-fast) var(--ease-out-expo);
+}
+
+.site-header__brand:hover {
+  transform: scale(1.03);
+}
+
+.site-header__nav {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  justify-content: center;
+}
+
+.site-header__link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 2.5rem;
+  min-height: 2.45rem;
+  padding: 0 1rem;
   border-radius: var(--radius-pill);
-  font-weight: 850;
-}
-
-.primary-nav__brand {
-  gap: var(--space-2);
-  padding: 0 var(--space-3) 0 var(--space-1);
-  font-size: var(--text-lg);
-}
-
-.primary-nav__brand small {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 750;
-  letter-spacing: 0.02em;
-}
-
-.primary-nav__mark {
-  width: 1.8rem;
-  height: 1.8rem;
-  border-radius: 0.65rem;
-  background: linear-gradient(135deg, var(--color-municipal-green), var(--color-ink));
-  box-shadow: 0 10px 24px rgba(47, 93, 80, 0.22);
-}
-
-.primary-nav__links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.primary-nav__link,
-.primary-nav__demo-toggle {
-  padding: 0 var(--space-4);
   color: var(--text-secondary);
-  transition:
-    background 160ms ease,
-    color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.primary-nav__demo-toggle {
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 253, 247, 0.42);
+  font-size: var(--text-sm);
   font-weight: 850;
+  letter-spacing: 0.01em;
+  transition:
+    color var(--motion-fast) ease,
+    background var(--motion-fast) ease;
 }
 
-.primary-nav__link:hover,
-.primary-nav__demo-toggle:hover {
+.site-header__link::after {
+  content: "";
+  position: absolute;
+  inset: auto 1rem -2px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--color-municipal-green);
+  transform: scaleX(0);
+  transition: transform var(--motion-fast) var(--ease-out-expo);
+}
+
+.site-header__link:hover {
   color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.5);
+  background: rgba(47, 93, 80, 0.08);
 }
 
-.primary-nav__link.router-link-active {
+.site-header__link.router-link-active {
   color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(23, 33, 26, 0.12);
+  background: rgba(47, 93, 80, 0.12);
 }
 
-.primary-nav__demo-toggle--active {
+.site-header__link.router-link-active::after {
+  transform: scaleX(1);
+}
+
+.site-header__demo {
+  display: inline-flex;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  align-items: center;
+  min-height: 2.45rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(23, 33, 26, 0.1);
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary);
+  background: rgba(255, 253, 247, 0.55);
+  font-size: var(--text-sm);
+  font-weight: 850;
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) ease,
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
+}
+
+.site-header__demo:hover {
   color: var(--text-primary);
-  background: rgba(255, 247, 225, 0.94);
-  box-shadow: inset 0 0 0 1px rgba(217, 144, 47, 0.38);
+  box-shadow: 0 8px 24px rgba(23, 33, 26, 0.08);
 }
 
-@media (max-width: 620px) {
-  .primary-nav {
-    align-items: flex-start;
-    border-radius: var(--radius-lg);
+.site-header__demo--active {
+  color: var(--color-municipal-green);
+  background: rgba(47, 93, 80, 0.12);
+  border-color: rgba(47, 93, 80, 0.35);
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.1);
+}
+
+@media (max-width: 760px) {
+  .site-header__inner {
+    flex-wrap: wrap;
+    gap: var(--space-2);
   }
 
-  .primary-nav__links {
+  .site-header__nav {
+    order: 3;
+    justify-content: flex-start;
     width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 
-  .primary-nav__link,
-  .primary-nav__demo-toggle {
-    flex: 1 1 auto;
-    justify-content: center;
+  .site-header__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .site-header__link {
+    white-space: nowrap;
   }
 }
 </style>

@@ -1,107 +1,92 @@
 <template>
   <DashboardLayout>
-    <div class="cluster-between">
-      <AppSectionHeader
-        eyebrow="AI Street Audit"
-        title="Review proactive street-audit runs"
-        description="Create backend audit runs, monitor AI pipeline handoff status, and prepare real model suggestions for human municipal review."
-      />
-      <div class="audit-actions">
-        <AppBadge tone="source-ai-audit">PaliGemma/Gemma pipeline</AppBadge>
-        <AppBadge tone="neutral">Human reviewed</AppBadge>
-        <AppBadge v-if="auditRunsStore.lastFetchedAt" tone="info">
-          Fetched {{ formatAuditDateTime(auditRunsStore.lastFetchedAt) }}
-        </AppBadge>
+    <header class="command-header animate-fade-up">
+      <div>
+        <p class="command-label">AI operations</p>
+        <h1>Street audit</h1>
+        <p class="command-header__sub">Scan routes · Review AI · Convert to tickets</p>
+      </div>
+      <div class="command-header__actions">
+        <span v-if="auditRunsStore.lastFetchedAt" class="command-header__sync">
+          {{ formatAuditDateTime(auditRunsStore.lastFetchedAt) }}
+        </span>
         <AppButton :disabled="auditRunsStore.isLoading" variant="secondary" @click="auditRunsStore.fetchRuns">
-          {{ auditRunsStore.isLoading ? 'Refreshing...' : 'Refresh runs' }}
+          {{ auditRunsStore.isLoading ? 'Syncing…' : 'Sync' }}
         </AppButton>
       </div>
-    </div>
+    </header>
 
-    <PitchModeBanner
-      v-if="auditRunsStore.usingDemoRuns"
-      data-mode="demo"
-      message="Prepared demo audit runs are shown because live backend audit data is empty or unavailable."
-    />
+    <GlassPanel v-if="auditRunsStore.error" label="Error" class="animate-fade-in">
+      <p class="command-error">{{ auditRunsStore.error }}</p>
+      <AppButton variant="secondary" size="sm" @click="auditRunsStore.fetchRuns">Retry</AppButton>
+    </GlassPanel>
 
-    <AppCard v-if="auditRunsStore.error" class="audit-error" variant="inset">
-      <AppBadge tone="danger">Backend error</AppBadge>
-      <p>{{ auditRunsStore.error }}</p>
-      <AppButton variant="secondary" @click="auditRunsStore.fetchRuns">Retry fetch</AppButton>
-    </AppCard>
+    <AuditRunMetrics class="animate-stagger" :metrics="auditRunsStore.metrics" />
 
-    <section class="audit-command-grid">
-      <AuditRunForm
-        :error="auditRunsStore.createError"
-        :is-creating="auditRunsStore.isCreating"
-        @create="auditRunsStore.createRun"
-      />
+    <section class="audit-deck animate-fade-up">
+      <GlassPanel label="Launch scan" elevated padding="sm" class="audit-deck__form">
+        <AuditRunForm
+          :error="auditRunsStore.createError"
+          :is-creating="auditRunsStore.isCreating"
+          @create="auditRunsStore.createRun"
+        />
+      </GlassPanel>
 
-      <AppCard class="stack audit-principles" variant="inset">
-        <div>
-          <p class="eyebrow">Review philosophy</p>
-          <h2>AI suggests. Municipality verifies.</h2>
-        </div>
-        <p>
-          KoStreet does not turn model output into tickets automatically. The backend and AI pipeline
-          produce candidates; municipal users review evidence before conversion.
-        </p>
-        <div class="audit-principles__grid">
-          <span v-for="principle in principles" :key="principle">{{ principle }}</span>
-        </div>
-      </AppCard>
+      <GlassPanel label="Run queue" padding="sm" class="audit-deck__queue">
+        <AuditRunFilters
+          :filters="auditRunsStore.filters"
+          @clear="auditRunsStore.clearFilters"
+          @update:search="auditRunsStore.setSearch"
+          @update:status="auditRunsStore.setStatus"
+        />
+        <AuditRunQueue
+          :is-demo-data="auditRunsStore.usingDemoRuns"
+          :is-loading="auditRunsStore.isLoading"
+          :runs="auditRunsStore.filteredRuns"
+          :selected-run-id="auditRunsStore.selectedRunId"
+          @select="auditRunsStore.selectRun"
+          @view-street="selectRunForScanner"
+        />
+      </GlassPanel>
     </section>
 
-    <AuditRunMetrics :metrics="auditRunsStore.metrics" />
-
-    <AuditRunFilters
-      :filters="auditRunsStore.filters"
-      @clear="auditRunsStore.clearFilters"
-      @update:search="auditRunsStore.setSearch"
-      @update:status="auditRunsStore.setStatus"
-    />
-
-    <section class="audit-workspace">
-      <AuditRunQueue
-        :is-demo-data="auditRunsStore.usingDemoRuns"
-        :is-loading="auditRunsStore.isLoading"
-        :runs="auditRunsStore.filteredRuns"
-        :selected-run-id="auditRunsStore.selectedRunId"
-        @select="auditRunsStore.selectRun"
-      />
-
+    <GlassPanel label="Review workspace" elevated padding="sm" class="animate-fade-in">
       <AuditRunDetailPanel
         :convert-error-by-id="auditSuggestionsStore.convertErrorById"
         :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
         :converted-report-by-suggestion-id="auditSuggestionsStore.convertedReportBySuggestionId"
+        :frames="selectedRunFrames"
+        :frames-error="selectedRunFramesError"
+        :frames-loading="selectedRunFramesLoading"
         :is-demo-data="auditRunsStore.usingDemoRuns"
         :review-error-by-id="auditSuggestionsStore.reviewErrorById"
         :review-loading-by-id="auditSuggestionsStore.reviewLoadingById"
         :run="auditRunsStore.selectedRun"
+        :scan-path="selectedRunScanPath"
+        :scan-path-error="selectedRunScanPathError"
+        :scan-path-loading="selectedRunScanPathLoading"
         :suggestions="selectedRunSuggestions"
         :suggestions-error="selectedRunSuggestionsError"
         :suggestions-loading="selectedRunSuggestionsLoading"
         @convert-suggestion="auditSuggestionsStore.convertSuggestionToReport"
+        @refresh-frames="refreshSelectedRunFrames"
+        @refresh-scan-path="refreshSelectedRunScanPath"
         @refresh-suggestions="refreshSelectedRunSuggestions"
         @review-suggestion="auditSuggestionsStore.reviewSuggestion"
+        @analyzed="handleAnalyzedFrame"
       />
-    </section>
+    </GlassPanel>
 
-    <DemoAuditSuggestionPanel
-      v-if="uiStore.demoMode"
-      :suggestions="demoAuditSuggestions"
-    />
+    <DemoAuditSuggestionPanel v-if="uiStore.demoMode" :suggestions="demoAuditSuggestions" />
   </DashboardLayout>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue';
-import AppBadge from '@/components/common/AppBadge.vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
-import PitchModeBanner from '@/components/common/PitchModeBanner.vue';
+import GlassPanel from '@/components/common/GlassPanel.vue';
+import { listAuditFrames, listAuditScanPath } from '@/api/auditFrames';
 import DemoAuditSuggestionPanel from '@/components/audit/DemoAuditSuggestionPanel.vue';
-import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
 import AuditRunDetailPanel from '@/components/audit/AuditRunDetailPanel.vue';
 import AuditRunFilters from '@/components/audit/AuditRunFilters.vue';
 import AuditRunForm from '@/components/audit/AuditRunForm.vue';
@@ -109,21 +94,35 @@ import AuditRunMetrics from '@/components/audit/AuditRunMetrics.vue';
 import AuditRunQueue from '@/components/audit/AuditRunQueue.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
+import {
+  buildDemoFrames,
+  buildDemoScanPath,
+  demoSuggestionsForRun,
+} from '@/demo/demoAuditScanPath';
 import { useAuditRunsStore } from '@/stores/auditRuns';
 import { useAuditSuggestionsStore } from '@/stores/auditSuggestions';
 import { useUiStore } from '@/stores/ui';
+import type { AuditFrameDetail, AuditFrameSummary, AuditRunSummary, AuditScanPoint } from '@/types/audit';
 import { formatAuditDateTime } from '@/utils/auditFormatting';
+import {
+  frameDetailToScanPoint,
+  frameDetailToSummary,
+  upsertFrameSummary,
+  upsertScanPoint,
+} from '@/utils/auditScanPath';
 
 const auditRunsStore = useAuditRunsStore();
 const auditSuggestionsStore = useAuditSuggestionsStore();
 const uiStore = useUiStore();
 
-const principles = ['Suggested, not automatic', 'Confidence shown when returned', 'Human verified', 'Ticket-ready after backend conversion'];
 let pollingTimer: number | undefined;
 
-const selectedRunSuggestions = computed(() =>
-  auditSuggestionsStore.suggestionsForRun(auditRunsStore.selectedRunId),
-);
+const selectedRunSuggestions = computed(() => {
+  if (auditRunsStore.usingDemoRuns && auditRunsStore.selectedRunId) {
+    return demoSuggestionsForRun(auditRunsStore.selectedRunId);
+  }
+  return auditSuggestionsStore.suggestionsForRun(auditRunsStore.selectedRunId);
+});
 const selectedRunSuggestionsLoading = computed(() =>
   auditSuggestionsStore.isLoadingForRun(auditRunsStore.selectedRunId),
 );
@@ -131,25 +130,32 @@ const selectedRunSuggestionsError = computed(() =>
   auditSuggestionsStore.errorForRun(auditRunsStore.selectedRunId),
 );
 
+const selectedRunFrames = ref<AuditFrameSummary[]>([]);
+const selectedRunScanPath = ref<AuditScanPoint[]>([]);
+const selectedRunFramesLoading = ref(false);
+const selectedRunScanPathLoading = ref(false);
+const selectedRunFramesError = ref<string | null>(null);
+const selectedRunScanPathError = ref<string | null>(null);
+
+function selectRunForScanner(run: AuditRunSummary) {
+  auditRunsStore.selectRun(run.id);
+}
+
 onMounted(() => {
   void auditRunsStore.fetchRuns();
   pollingTimer = window.setInterval(() => {
     const selectedRun = auditRunsStore.selectedRun;
-    if (!selectedRun || auditRunsStore.usingDemoRuns) {
-      return;
-    }
-
+    if (!selectedRun || auditRunsStore.usingDemoRuns) return;
     if (selectedRun.status === 'queued' || selectedRun.status === 'running') {
       void auditRunsStore.fetchRuns();
       void auditSuggestionsStore.fetchForRun(selectedRun.id);
+      void loadSelectedRunScanPath(selectedRun.id);
     }
   }, 8000);
 });
 
 onUnmounted(() => {
-  if (pollingTimer !== undefined) {
-    window.clearInterval(pollingTimer);
-  }
+  if (pollingTimer !== undefined) window.clearInterval(pollingTimer);
 });
 
 watch(
@@ -165,82 +171,176 @@ watch(
 watch(
   () => auditRunsStore.selectedRunId,
   (runId) => {
+    if (runId && auditRunsStore.usingDemoRuns) {
+      loadDemoRunData(runId);
+      return;
+    }
+
     if (runId && !auditRunsStore.usingDemoRuns) {
       void auditSuggestionsStore.fetchForRun(runId);
+      void loadSelectedRunFrames(runId);
+      void loadSelectedRunScanPath(runId);
+    } else {
+      selectedRunFrames.value = [];
+      selectedRunScanPath.value = [];
+      selectedRunFramesError.value = null;
+      selectedRunScanPathError.value = null;
     }
   },
 );
 
+function loadDemoRunData(runId: string) {
+  selectedRunScanPathLoading.value = true;
+  selectedRunFramesLoading.value = true;
+  selectedRunScanPathError.value = null;
+  selectedRunFramesError.value = null;
+
+  try {
+    selectedRunScanPath.value = buildDemoScanPath(runId);
+    selectedRunFrames.value = buildDemoFrames(runId);
+  } catch (loadError) {
+    const message =
+      loadError instanceof Error ? loadError.message : 'Could not load demo scan data.';
+    selectedRunScanPathError.value = message;
+    selectedRunFramesError.value = message;
+    selectedRunScanPath.value = [];
+    selectedRunFrames.value = [];
+  } finally {
+    selectedRunScanPathLoading.value = false;
+    selectedRunFramesLoading.value = false;
+  }
+}
+
+async function loadSelectedRunScanPath(runId: string) {
+  selectedRunScanPathLoading.value = true;
+  selectedRunScanPathError.value = null;
+
+  try {
+    selectedRunScanPath.value = await listAuditScanPath(runId);
+  } catch (loadError) {
+    selectedRunScanPathError.value =
+      loadError instanceof Error ? loadError.message : 'Could not load scan path.';
+    selectedRunScanPath.value = [];
+  } finally {
+    selectedRunScanPathLoading.value = false;
+  }
+}
+
+async function loadSelectedRunFrames(runId: string) {
+  selectedRunFramesLoading.value = true;
+  selectedRunFramesError.value = null;
+
+  try {
+    selectedRunFrames.value = await listAuditFrames(runId);
+  } catch (loadError) {
+    selectedRunFramesError.value =
+      loadError instanceof Error ? loadError.message : 'Could not load analyzed frames.';
+    selectedRunFrames.value = [];
+  } finally {
+    selectedRunFramesLoading.value = false;
+  }
+}
+
 function refreshSelectedRunSuggestions() {
-  if (auditRunsStore.selectedRunId) {
+  if (auditRunsStore.selectedRunId && !auditRunsStore.usingDemoRuns) {
     void auditSuggestionsStore.fetchForRun(auditRunsStore.selectedRunId);
   }
+}
+
+function refreshSelectedRunFrames() {
+  if (!auditRunsStore.selectedRunId) return;
+  if (auditRunsStore.usingDemoRuns) {
+    loadDemoRunData(auditRunsStore.selectedRunId);
+    return;
+  }
+  void loadSelectedRunFrames(auditRunsStore.selectedRunId);
+}
+
+function refreshSelectedRunScanPath() {
+  if (!auditRunsStore.selectedRunId) return;
+  if (auditRunsStore.usingDemoRuns) {
+    loadDemoRunData(auditRunsStore.selectedRunId);
+    return;
+  }
+  void loadSelectedRunScanPath(auditRunsStore.selectedRunId);
+}
+
+function handleAnalyzedFrame(frame: AuditFrameDetail) {
+  selectedRunScanPath.value = upsertScanPoint(
+    selectedRunScanPath.value,
+    frameDetailToScanPoint(frame),
+  );
+  selectedRunFrames.value = upsertFrameSummary(
+    selectedRunFrames.value,
+    frameDetailToSummary(frame),
+  );
+
+  if (frame.suggestion_id && !auditRunsStore.usingDemoRuns) {
+    void auditSuggestionsStore.fetchSuggestion(frame.suggestion_id);
+  }
+
+  refreshSelectedRunScanPath();
+  refreshSelectedRunSuggestions();
+  refreshSelectedRunFrames();
 }
 </script>
 
 <style scoped>
-.audit-actions {
+.command-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid rgba(23, 33, 26, 0.08);
+}
+
+.command-header h1 {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  letter-spacing: -0.04em;
+}
+
+.command-header__sub {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.command-header__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  justify-content: flex-end;
 }
 
-.audit-error {
+.command-header__sync {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+}
+
+.command-error {
+  margin: 0;
+  color: var(--color-repair-red);
+}
+
+.audit-deck {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.85fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.audit-deck__queue {
   display: grid;
   gap: var(--space-3);
 }
 
-.audit-error p,
-p {
-  color: var(--text-secondary);
-}
-
-.audit-command-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.72fr);
-  gap: var(--space-5);
-  align-items: stretch;
-}
-
-.audit-principles h2,
-.audit-principles p {
-  margin: 0;
-}
-
-.audit-principles__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.audit-principles__grid span {
-  padding: var(--space-3);
-  border: var(--border-soft);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.55);
-  font-size: var(--text-sm);
-  font-weight: 800;
-}
-
-.audit-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr);
-  gap: var(--space-5);
-  align-items: start;
-}
-
-@media (max-width: 980px) {
-  .audit-command-grid,
-  .audit-workspace {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 520px) {
-  .audit-principles__grid {
+@media (max-width: 1080px) {
+  .audit-deck {
     grid-template-columns: 1fr;
   }
 }

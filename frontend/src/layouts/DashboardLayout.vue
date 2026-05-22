@@ -13,6 +13,6 @@ import AppShell from './AppShell.vue';
 <style scoped>
 .dashboard-layout {
   display: grid;
-  gap: var(--space-10);
+  gap: var(--space-5);
 }
 </style>

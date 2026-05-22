@@ -30,7 +30,22 @@
     </dl>
 
     <AppCard class="demo-suggestion-card__evidence" variant="muted">
-      <AppBadge tone="source-ai-audit">No restricted image shown</AppBadge>
+      <AnalyzedFrameViewer
+        v-if="demoSuggestionImageUrl(suggestion)"
+        layout="compact"
+        :category="suggestion.category"
+        :confidence="suggestion.confidence"
+        :description="suggestion.description ?? undefined"
+        :frame-index="suggestion.frame_index ?? undefined"
+        :frames-total="64"
+        :image-url="demoSuggestionImageUrl(suggestion)"
+        :regions="suggestion.detection_regions ?? []"
+        :severity="suggestion.severity ?? undefined"
+        :show-metadata="false"
+      />
+      <AppBadge tone="source-ai-audit">
+        {{ demoSuggestionImageUrl(suggestion) ? 'AI detection evidence' : 'No restricted image shown' }}
+      </AppBadge>
       <p>
         {{ suggestion.explanation }}
       </p>
@@ -41,6 +56,8 @@
 <script setup lang="ts">
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppCard from '@/components/common/AppCard.vue';
+import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
+import { demoSuggestionImageUrl } from '@/demo/demoAuditSuggestions';
 import type { AuditSuggestion } from '@/types/detection';
 import {
   categoryLabels,

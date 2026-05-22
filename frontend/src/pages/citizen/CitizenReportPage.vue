@@ -1,56 +1,74 @@
 <template>
   <CitizenLayout>
-    <AppSectionHeader
-      eyebrow="Citizen Flow"
+    <PageHero
+      align="center"
+      eyebrow="Citizen report"
       title="Report a street issue"
-      description="Create a structured, geolocated civic issue report for Prishtina municipal review."
+      description="Photo, location, category — submit in under a minute."
     />
 
-    <ReportProgress :completed-steps="completedSteps" :current-step="currentStep" :steps="steps" />
-
-    <PhotoCaptureField v-model="imageFile" />
-
-    <LocationCaptureField
-      v-model:accuracy="draft.locationAccuracy"
-      v-model:latitude="draft.latitude"
-      v-model:longitude="draft.longitude"
+    <ReportProgress
+      :completed-steps="completedSteps"
+      :current-step="activeStep"
+      :steps="steps"
+      @navigate="goToStep"
     />
 
-    <IssueCategorySelector v-model="draft.category" />
+    <GlassPanel class="report-wizard-shell animate-fade-in" elevated padding="lg">
+      <div class="report-wizard">
+      <Transition name="step" mode="out-in">
+        <PhotoCaptureField v-if="activeStep === 'photo'" key="photo" v-model="imageFile" />
 
-    <AppCard variant="inset" class="description-card stack">
-      <div class="cluster-between">
-        <div>
-          <h2>Description</h2>
-          <p>Add context such as lane, nearby landmark, or urgency.</p>
+        <LocationCaptureField
+          v-else-if="activeStep === 'location'"
+          key="location"
+          v-model:accuracy="draft.locationAccuracy"
+          v-model:latitude="draft.latitude"
+          v-model:location-label="draft.locationLabel"
+          v-model:longitude="draft.longitude"
+        />
+
+        <IssueCategorySelector v-else-if="activeStep === 'category'" key="category" v-model="draft.category" />
+
+        <div v-else key="review" class="report-wizard__review stack-lg">
+          <AppCard variant="inset" class="description-card stack">
+            <div class="cluster-between">
+              <div>
+                <h2>Add a note</h2>
+                <p class="muted">Optional context for municipal staff.</p>
+              </div>
+              <AppBadge :tone="description.length > maxDescriptionLength ? 'danger' : 'neutral'">
+                {{ description.length }}/{{ maxDescriptionLength }}
+              </AppBadge>
+            </div>
+            <AppTextarea
+              v-model="description"
+              :maxlength="maxDescriptionLength"
+              aria-label="Issue description"
+              placeholder="Lane, landmark, urgency…"
+            />
+          </AppCard>
+
+          <ReportReviewCard
+            :can-submit="canSubmit"
+            :draft="draft"
+            :error="submitError"
+            :is-submitting="isSubmitting"
+            @submit="submitReport"
+          />
         </div>
-        <AppBadge :tone="description.length > maxDescriptionLength ? 'danger' : 'neutral'">
-          {{ description.length }}/{{ maxDescriptionLength }}
-        </AppBadge>
+      </Transition>
       </div>
-      <AppTextarea
-        v-model="description"
-        :maxlength="maxDescriptionLength"
-        aria-label="Issue description"
-        placeholder="Example: Large pothole near the right lane, close to the bus stop."
-      />
-    </AppCard>
 
-    <ReportReviewCard
-      :can-submit="canSubmit"
-      :draft="draft"
-      :error="submitError"
-      :is-submitting="isSubmitting"
-      @submit="submitReport"
-    />
-
-    <AppCard variant="inset" class="trust-note">
-      <AppBadge tone="info">Citizen trust note</AppBadge>
-      <p>
-        The selected image is previewed locally only. It is not uploaded until a backend image
-        endpoint is connected. The structured report data is submitted now.
-      </p>
-    </AppCard>
+      <div v-if="activeStep !== 'review'" class="report-wizard__nav cluster-between">
+        <AppButton :disabled="activeStep === 'photo'" variant="secondary" @click="goBack">
+          Back
+        </AppButton>
+        <AppButton :disabled="!canAdvance" @click="goNext">
+          Continue
+        </AppButton>
+      </div>
+    </GlassPanel>
   </CitizenLayout>
 </template>
 
@@ -58,8 +76,10 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AppBadge from '@/components/common/AppBadge.vue';
+import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
-import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
+import GlassPanel from '@/components/common/GlassPanel.vue';
+import PageHero from '@/components/common/PageHero.vue';
 import AppTextarea from '@/components/common/AppTextarea.vue';
 import IssueCategorySelector from '@/components/reports/IssueCategorySelector.vue';
 import LocationCaptureField from '@/components/reports/LocationCaptureField.vue';
@@ -79,6 +99,7 @@ const { previewUrl } = useImagePreview(imageFile);
 const description = ref('');
 const isSubmitting = ref(false);
 const submitError = ref<string | null>(null);
+const activeStep = ref<'photo' | 'location' | 'category' | 'review'>('photo');
 
 const draft = reactive<ReportDraft>({
   imageFile: null,
@@ -87,6 +108,7 @@ const draft = reactive<ReportDraft>({
   latitude: null,
   longitude: null,
   locationAccuracy: null,
+  locationLabel: null,
   description: '',
   aiSuggestion: null,
 });
@@ -118,7 +140,9 @@ const hasValidLongitude = computed(
 );
 const hasValidLocation = computed(() => hasValidLatitude.value && hasValidLongitude.value);
 const hasValidDescription = computed(() => description.value.length <= maxDescriptionLength);
-const canSubmit = computed(() => Boolean(draft.category) && hasValidLocation.value && hasValidDescription.value);
+const canSubmit = computed(
+  () => Boolean(draft.category) && hasValidLocation.value && hasValidDescription.value,
+);
 
 const completedSteps = computed(() => {
   const completed: string[] = [];
@@ -129,16 +153,34 @@ const completedSteps = computed(() => {
   return completed;
 });
 
-const currentStep = computed(() => {
-  if (!draft.imageFile) return 'photo';
-  if (!hasValidLocation.value) return 'location';
-  if (!draft.category) return 'category';
-  return 'review';
+const canAdvance = computed(() => {
+  if (activeStep.value === 'photo') return true;
+  if (activeStep.value === 'location') return hasValidLocation.value;
+  if (activeStep.value === 'category') return Boolean(draft.category);
+  return false;
 });
+
+function goToStep(stepId: string) {
+  if (stepId === 'photo' || stepId === 'location' || stepId === 'category' || stepId === 'review') {
+    activeStep.value = stepId;
+  }
+}
+
+function goNext() {
+  if (activeStep.value === 'photo') activeStep.value = 'location';
+  else if (activeStep.value === 'location') activeStep.value = 'category';
+  else if (activeStep.value === 'category') activeStep.value = 'review';
+}
+
+function goBack() {
+  if (activeStep.value === 'location') activeStep.value = 'photo';
+  else if (activeStep.value === 'category') activeStep.value = 'location';
+  else if (activeStep.value === 'review') activeStep.value = 'category';
+}
 
 async function submitReport() {
   if (!canSubmit.value || !draft.category || draft.latitude === null || draft.longitude === null) {
-    submitError.value = 'Please complete the required category and location fields.';
+    submitError.value = 'Complete category and location before submitting.';
     return;
   }
 
@@ -157,9 +199,7 @@ async function submitReport() {
     await router.push({ name: 'report-status', params: { id: report.id } });
   } catch (error) {
     submitError.value =
-      error instanceof Error
-        ? error.message
-        : 'Could not submit the report. Check the connection and try again.';
+      error instanceof Error ? error.message : 'Could not submit the report. Try again.';
   } finally {
     isSubmitting.value = false;
   }
@@ -167,18 +207,37 @@ async function submitReport() {
 </script>
 
 <style scoped>
-h2 {
+.report-wizard-shell {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.report-wizard {
+  min-height: 18rem;
+}
+
+.report-wizard__nav {
+  padding-top: var(--space-2);
+}
+
+.description-card h2 {
   margin: 0;
 }
 
-.description-card p,
-.trust-note p {
-  color: var(--text-secondary);
+.step-enter-active,
+.step-leave-active {
+  transition:
+    opacity var(--motion-base) var(--ease-out-expo),
+    transform var(--motion-base) var(--ease-out-expo);
 }
 
-.description-card,
-.trust-note {
-  display: grid;
-  gap: var(--space-3);
+.step-enter-from {
+  opacity: 0;
+  transform: translateX(16px);
+}
+
+.step-leave-to {
+  opacity: 0;
+  transform: translateX(-16px);
 }
 </style>

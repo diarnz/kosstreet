@@ -1,4 +1,4 @@
-export type StreetViewTargetSource = 'report' | 'audit_suggestion';
+export type StreetViewTargetSource = 'report' | 'audit_suggestion' | 'audit_run';
 
 export interface StreetViewTarget {
   id: string;
@@ -14,4 +14,11 @@ export interface StreetViewTarget {
 export interface StreetViewLookupResult {
   panorama: google.maps.StreetViewPanoramaData;
   position: google.maps.LatLngLiteral;
+}
+
+export interface StreetViewCurrentView {
+  latitude: number;
+  longitude: number;
+  heading: number;
+  pitch: number;
 }

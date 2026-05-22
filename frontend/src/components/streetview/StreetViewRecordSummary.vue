@@ -27,9 +27,11 @@ const props = defineProps<{
   target: StreetViewTarget | null;
 }>();
 
-const sourceLabel = computed(() =>
-  props.target?.source === 'audit_suggestion' ? 'AI audit Street View context' : 'Report Street View context',
-);
+const sourceLabel = computed(() => {
+  if (props.target?.source === 'audit_suggestion') return 'Audit evidence';
+  if (props.target?.source === 'audit_run') return 'Audit scan location';
+  return 'Report location';
+});
 </script>
 
 <style scoped>

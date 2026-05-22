@@ -8,14 +8,7 @@
       <StatusPill :status="currentStatus" />
     </div>
 
-    <p v-if="isDemoData">
-      This is a Pitch Mode demo record. Workflow controls show the future backend contract, but
-      demo records do not persist status changes.
-    </p>
-    <p v-else>
-      Status changes are sent to <code>PATCH /api/v1/reports/:id/status</code>. If the
-      backend endpoint is not connected yet, KoStreet keeps the current status unchanged.
-    </p>
+    <p v-if="isDemoData" class="muted">Demo record — changes are not persisted.</p>
 
     <AppEmptyState
       v-if="allowedStatuses.length === 0"

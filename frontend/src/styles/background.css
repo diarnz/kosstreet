@@ -1,0 +1,91 @@
+.glass-panel {
+  border: 1px solid rgba(255, 253, 247, 0.55);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 247, 0.42);
+  box-shadow:
+    0 4px 24px rgba(23, 33, 26, 0.06),
+    inset 0 1px 0 rgba(255, 253, 247, 0.75);
+  backdrop-filter: blur(16px);
+}
+
+.glass-panel--elevated {
+  background: rgba(255, 253, 247, 0.58);
+  box-shadow:
+    0 18px 48px rgba(23, 33, 26, 0.1),
+    inset 0 1px 0 rgba(255, 253, 247, 0.85);
+}
+
+.glass-panel--interactive {
+  transition:
+    transform var(--motion-fast) var(--ease-out-expo),
+    box-shadow var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.glass-panel--interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(47, 93, 80, 0.22);
+  box-shadow:
+    0 22px 56px rgba(23, 33, 26, 0.12),
+    inset 0 1px 0 rgba(255, 253, 247, 0.9);
+}
+
+.command-label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-ink) 0%, var(--color-municipal-green) 55%, var(--color-amber-signal) 100%);
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.gradient-sweep-fill {
+  background: linear-gradient(
+    90deg,
+    var(--color-ink) 0%,
+    var(--color-ink) 28%,
+    var(--color-municipal-green) 42%,
+    var(--color-amber-signal) 50%,
+    var(--color-resolved-blue) 58%,
+    var(--color-ink) 72%,
+    var(--color-ink) 100%
+  );
+  background-size: 250% 100%;
+  animation: gradient-slide-ltr 5s linear infinite;
+}
+
+.gradient-sweep-text {
+  background: linear-gradient(
+    90deg,
+    var(--color-ink) 0%,
+    var(--color-ink) 28%,
+    var(--color-municipal-green) 42%,
+    var(--color-amber-signal) 50%,
+    var(--color-resolved-blue) 58%,
+    var(--color-ink) 72%,
+    var(--color-ink) 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: gradient-slide-ltr 5s linear infinite;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}

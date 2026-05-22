@@ -1,12 +1,12 @@
 <template>
-  <AppCard class="review-card stack" variant="command">
+  <AppCard class="review-card stack-lg animate-scale-in" variant="default">
     <div class="cluster-between">
       <div>
+        <p class="eyebrow">Step 4</p>
         <h2>Review and submit</h2>
-        <p>Confirm the structured report before sending it to the municipality workflow.</p>
       </div>
       <AppBadge :tone="canSubmit ? 'success' : 'warning'">
-        {{ canSubmit ? 'Ready' : 'Needs required fields' }}
+        {{ canSubmit ? 'Ready' : 'Incomplete' }}
       </AppBadge>
     </div>
 
@@ -21,36 +21,26 @@
       <div>
         <dt>Location</dt>
         <dd>
-          <span v-if="draft.latitude !== null && draft.longitude !== null">
-            {{ draft.latitude }}, {{ draft.longitude }}
-          </span>
+          <template v-if="draft.latitude !== null && draft.longitude !== null">
+            <span>{{ draft.locationLabel || formatCoordinates(draft.latitude, draft.longitude) }}</span>
+          </template>
           <span v-else class="muted">Required</span>
         </dd>
       </div>
       <div>
         <dt>Photo</dt>
-        <dd>
-          <span v-if="draft.imageFile">{{ draft.imageFile.name }} selected locally</span>
-          <span v-else class="muted">No local photo selected</span>
-        </dd>
-      </div>
-      <div>
-        <dt>AI analysis</dt>
-        <dd>
-          <span v-if="draft.aiSuggestion">Real AI suggestion available</span>
-          <span v-else class="muted">Not connected yet</span>
-        </dd>
+        <dd>{{ draft.imageFile ? draft.imageFile.name : 'No photo' }}</dd>
       </div>
       <div class="review-card__wide">
         <dt>Description</dt>
-        <dd>{{ draft.description || 'No description added' }}</dd>
+        <dd>{{ draft.description || '—' }}</dd>
       </div>
     </dl>
 
     <p v-if="error" class="review-card__error">{{ error }}</p>
 
     <AppButton :disabled="!canSubmit || isSubmitting" size="lg" @click="$emit('submit')">
-      {{ isSubmitting ? 'Submitting report...' : 'Submit report' }}
+      {{ isSubmitting ? 'Submitting…' : 'Submit report' }}
     </AppButton>
   </AppCard>
 </template>
@@ -61,6 +51,7 @@ import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import IssueCategoryBadge from './IssueCategoryBadge.vue';
 import type { ReportDraft } from '@/types/reportDraft';
+import { formatCoordinates } from '@/utils/reportFormatting';
 
 defineProps<{
   draft: ReportDraft;
@@ -76,11 +67,7 @@ defineEmits<{
 
 <style scoped>
 .review-card h2 {
-  margin: 0 0 var(--space-2);
-}
-
-.review-card p {
-  color: var(--text-secondary);
+  margin: 0;
 }
 
 .review-card__details {
@@ -128,4 +115,3 @@ dd {
   }
 }
 </style>
-

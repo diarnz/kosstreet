@@ -2,7 +2,7 @@
   "route_name": "Bill Clinton Boulevard Audit",
   "municipality": "Prishtina",
   "scanned_at": "2026-05-22T00:22:48.384896+00:00",
-  "total_frames_analyzed": 64,
+  "total_frames_analyzed": 16,
   "detections": [
     {
       "category": "pothole",

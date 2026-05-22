@@ -1,62 +1,64 @@
 <template>
-  <AppCard class="audit-suggestion-list stack" variant="inset">
-    <div class="cluster-between">
+  <section class="audit-suggestion-list">
+    <header class="audit-suggestion-list__head">
       <div>
-        <p class="eyebrow">AI suggestion review</p>
-        <h3>Model-produced detections</h3>
+        <p class="command-label">AI suggestions</p>
+        <h3>{{ suggestions.length }} detections</h3>
       </div>
-      <div class="cluster">
-        <AppBadge tone="source-ai-audit">{{ suggestions.length }} suggestions</AppBadge>
-        <AppButton :disabled="isLoading" size="sm" type="button" variant="secondary" @click="$emit('refresh')">
-          {{ isLoading ? 'Refreshing...' : 'Refresh' }}
-        </AppButton>
-      </div>
-    </div>
+      <AppButton :disabled="isLoading" size="sm" type="button" variant="secondary" @click="$emit('refresh')">
+        {{ isLoading ? 'Syncing…' : 'Refresh' }}
+      </AppButton>
+    </header>
 
-    <p>
-      Suggestions below are persisted backend records from the AI street-audit pipeline. Municipal
-      decisions are saved back to the backend before any conversion into dashboard reports.
-    </p>
-
-    <AppCard v-if="error" class="audit-suggestion-list__error" variant="inset">
-      <AppBadge tone="danger">Suggestion fetch failed</AppBadge>
-      <p>{{ error }}</p>
-      <AppButton size="sm" type="button" variant="secondary" @click="$emit('refresh')">Retry</AppButton>
-    </AppCard>
+    <p v-if="error" class="audit-suggestion-list__error">{{ error }}</p>
 
     <AppEmptyState
       v-else-if="!isLoading && suggestions.length === 0"
-      action-label="Refresh suggestions"
-      description="The backend returned no suggestions for this run. This can happen when no frame clears the confidence threshold or all external frame/model calls fail."
-      title="No AI suggestions returned"
       tone="audit"
+      title="No suggestions yet"
+      description="The AI pipeline has not returned detections for this run."
+      action-label="Refresh"
       @action="$emit('refresh')"
     />
 
-    <p v-else-if="isLoading" class="muted">Loading AI suggestions from the backend...</p>
+    <AppLoading v-else-if="isLoading" label="Loading suggestions" />
 
     <div v-else class="audit-suggestion-list__grid">
-      <AuditSuggestionCard
+      <div
         v-for="suggestion in suggestions"
         :key="suggestion.id"
-        :convert-error="convertErrorById[suggestion.id] ?? null"
-        :converted-report-id="convertedReportBySuggestionId[suggestion.id] ?? null"
-        :is-converting="convertLoadingById[suggestion.id] ?? false"
-        :is-reviewing="reviewLoadingById[suggestion.id] ?? false"
-        :review-error="reviewErrorById[suggestion.id] ?? null"
-        :suggestion="suggestion"
-        @convert="$emit('convert', $event)"
-        @review="(suggestionId, payload) => $emit('review', suggestionId, payload)"
-      />
+        class="audit-suggestion-list__item"
+        :class="{ 'audit-suggestion-list__item--selected': suggestion.id === selectedSuggestionId }"
+      >
+        <AppButton
+          v-if="showScannerActions"
+          size="sm"
+          type="button"
+          :variant="suggestion.id === selectedSuggestionId ? 'primary' : 'secondary'"
+          @click="$emit('select', suggestion.id)"
+        >
+          {{ suggestion.id === selectedSuggestionId ? 'On scanner' : 'Show on scanner' }}
+        </AppButton>
+        <AuditSuggestionCard
+          :compact="compactCards"
+          :convert-error="convertErrorById[suggestion.id] ?? null"
+          :converted-report-id="convertedReportBySuggestionId[suggestion.id] ?? null"
+          :is-converting="convertLoadingById[suggestion.id] ?? false"
+          :is-reviewing="reviewLoadingById[suggestion.id] ?? false"
+          :review-error="reviewErrorById[suggestion.id] ?? null"
+          :suggestion="suggestion"
+          @convert="$emit('convert', $event)"
+          @review="(suggestionId, payload) => $emit('review', suggestionId, payload)"
+        />
+      </div>
     </div>
-  </AppCard>
+  </section>
 </template>
 
 <script setup lang="ts">
-import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
 import AppEmptyState from '@/components/common/AppEmptyState.vue';
+import AppLoading from '@/components/common/AppLoading.vue';
 import AuditSuggestionCard from '@/components/audit/AuditSuggestionCard.vue';
 import type { AuditSuggestion, AuditSuggestionReviewPayload } from '@/types/detection';
 
@@ -69,32 +71,64 @@ defineProps<{
   convertLoadingById: Record<string, boolean>;
   convertErrorById: Record<string, string | null>;
   convertedReportBySuggestionId: Record<string, string>;
+  selectedSuggestionId?: string | null;
+  showScannerActions?: boolean;
+  compactCards?: boolean;
 }>();
 
 defineEmits<{
   refresh: [];
   review: [suggestionId: string, payload: AuditSuggestionReviewPayload];
   convert: [suggestionId: string];
+  select: [suggestionId: string];
 }>();
 </script>
 
 <style scoped>
-.audit-suggestion-list h3,
-.audit-suggestion-list p {
-  margin: 0;
+.audit-suggestion-list {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid rgba(23, 33, 26, 0.08);
 }
 
-.audit-suggestion-list p {
-  color: var(--text-secondary);
+.audit-suggestion-list__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.audit-suggestion-list h3 {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+  font-weight: 850;
 }
 
 .audit-suggestion-list__error {
-  display: grid;
-  gap: var(--space-3);
+  margin: 0;
+  color: var(--color-repair-red);
+  font-size: var(--text-sm);
+  font-weight: 750;
 }
 
 .audit-suggestion-list__grid {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
+}
+
+.audit-suggestion-list__item {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition: border-color var(--motion-fast), background var(--motion-fast);
+}
+
+.audit-suggestion-list__item--selected {
+  border-color: rgba(47, 93, 80, 0.28);
+  background: rgba(47, 93, 80, 0.06);
 }
 </style>

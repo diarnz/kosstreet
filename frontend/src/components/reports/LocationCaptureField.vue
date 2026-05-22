@@ -1,30 +1,55 @@
 <template>
-  <AppCard class="location-field stack" variant="inset">
+  <AppCard class="location-field stack-lg animate-scale-in" variant="default">
     <div class="cluster-between">
       <div>
-        <h2>Location</h2>
-        <p>Use your current location or enter coordinates manually. Location is required.</p>
+        <p class="eyebrow">Step 2</p>
+        <h2>Pin the issue location</h2>
       </div>
       <AppBadge :tone="hasValidLocation ? 'success' : 'warning'">
-        {{ hasValidLocation ? 'Location ready' : 'Required' }}
+        {{ hasValidLocation ? 'Ready' : 'Required' }}
       </AppBadge>
     </div>
 
-    <div class="cluster">
-      <AppButton :disabled="isLoading" variant="secondary" @click="captureLocation">
-        {{ isLoading ? 'Getting location...' : 'Use current location' }}
-      </AppButton>
-      <span v-if="accuracy" class="location-field__accuracy">Accuracy: {{ Math.round(accuracy) }}m</span>
+    <LocationSearchField
+      v-model:latitude="latitudeProxy"
+      v-model:longitude="longitudeProxy"
+      v-model:location-label="locationLabelProxy"
+      hint=""
+    />
+
+    <div class="location-field__gps-row">
+      <GpsLocateButton @error="geoError = $event" @located="onGpsLocated" />
+    </div>
+
+    <div v-if="hasValidLocation" class="location-field__confirmed animate-fade-in">
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path
+          d="M3.5 8.2l2.8 2.8 6.2-6.4"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <div>
+        <strong>{{ locationLabelProxy || 'Location selected' }}</strong>
+        <span>{{ latitudeProxy }}, {{ longitudeProxy }}</span>
+        <span v-if="accuracy">± {{ Math.round(accuracy) }}m accuracy</span>
+      </div>
     </div>
 
     <p v-if="geoError" class="location-field__error">{{ geoError }}</p>
 
-    <div class="location-field__grid">
+    <button class="location-field__advanced-toggle" type="button" @click="showAdvanced = !showAdvanced">
+      {{ showAdvanced ? 'Hide manual coordinates' : 'Enter coordinates manually' }}
+    </button>
+
+    <div v-if="showAdvanced" class="location-field__grid animate-fade-in">
       <AppField label="Latitude" :error="latitudeError">
         <AppInput
           :model-value="latitudeText"
           aria-label="Latitude"
-          placeholder="42.6629"
+          placeholder="42.2139"
           type="number"
           @update:model-value="updateLatitude"
         />
@@ -34,7 +59,7 @@
         <AppInput
           :model-value="longitudeText"
           aria-label="Longitude"
-          placeholder="21.1655"
+          placeholder="20.7397"
           type="number"
           @update:model-value="updateLongitude"
         />
@@ -46,26 +71,41 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
-import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import AppField from '@/components/common/AppField.vue';
 import AppInput from '@/components/common/AppInput.vue';
-import { getCurrentLocation } from '@/composables/useGeolocation';
+import GpsLocateButton from '@/components/maps/GpsLocateButton.vue';
+import LocationSearchField from '@/components/maps/LocationSearchField.vue';
 
 const props = defineProps<{
   latitude: number | null;
   longitude: number | null;
   accuracy: number | null;
+  locationLabel?: string | null;
 }>();
 
 const emit = defineEmits<{
   'update:latitude': [value: number | null];
   'update:longitude': [value: number | null];
   'update:accuracy': [value: number | null];
+  'update:locationLabel': [value: string | null];
 }>();
 
-const isLoading = ref(false);
 const geoError = ref<string | null>(null);
+const showAdvanced = ref(false);
+
+const latitudeProxy = computed({
+  get: () => props.latitude,
+  set: (value) => emit('update:latitude', value),
+});
+const longitudeProxy = computed({
+  get: () => props.longitude,
+  set: (value) => emit('update:longitude', value),
+});
+const locationLabelProxy = computed({
+  get: () => props.locationLabel ?? null,
+  set: (value) => emit('update:locationLabel', value),
+});
 
 const latitudeText = computed(() => (props.latitude === null ? '' : String(props.latitude)));
 const longitudeText = computed(() => (props.longitude === null ? '' : String(props.longitude)));
@@ -83,23 +123,24 @@ const longitudeError = computed(() => {
 });
 
 const hasValidLocation = computed(
-  () => props.latitude !== null && props.longitude !== null && !latitudeError.value && !longitudeError.value,
+  () =>
+    props.latitude !== null &&
+    props.longitude !== null &&
+    !latitudeError.value &&
+    !longitudeError.value,
 );
 
-async function captureLocation() {
-  isLoading.value = true;
+function onGpsLocated(payload: {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  label: string;
+}) {
   geoError.value = null;
-
-  try {
-    const location = await getCurrentLocation();
-    emit('update:latitude', Number(location.latitude.toFixed(6)));
-    emit('update:longitude', Number(location.longitude.toFixed(6)));
-    emit('update:accuracy', location.accuracy);
-  } catch {
-    geoError.value = 'Could not access your location. You can enter coordinates manually.';
-  } finally {
-    isLoading.value = false;
-  }
+  emit('update:latitude', payload.latitude);
+  emit('update:longitude', payload.longitude);
+  emit('update:accuracy', payload.accuracy);
+  emit('update:locationLabel', payload.label);
 }
 
 function parseCoordinate(value: string): number | null {
@@ -121,17 +162,62 @@ function updateLongitude(value: string) {
 
 <style scoped>
 .location-field h2 {
-  margin: 0 0 var(--space-2);
+  margin: 0;
 }
 
-.location-field p,
-.location-field__accuracy {
-  color: var(--text-secondary);
+.location-field__gps-row {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) 0 var(--space-6);
+}
+
+.location-field__confirmed {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  border: 1px solid rgba(47, 93, 80, 0.22);
+  border-radius: var(--radius-md);
+  background: rgba(221, 232, 213, 0.42);
+}
+
+.location-field__confirmed svg {
+  flex-shrink: 0;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  color: var(--color-municipal-green);
+}
+
+.location-field__confirmed div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.location-field__confirmed strong {
+  color: var(--text-primary);
+}
+
+.location-field__confirmed span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
 }
 
 .location-field__error {
   color: var(--color-repair-red);
   font-weight: 800;
+}
+
+.location-field__advanced-toggle {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  color: var(--color-municipal-green);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 850;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .location-field__grid {
@@ -146,4 +232,3 @@ function updateLongitude(value: string) {
   }
 }
 </style>
-

@@ -29,8 +29,8 @@ withDefaults(
     coordinates?: string | null;
   }>(),
   {
-    title: 'Use the queue and detail panel while Street View is unavailable.',
-    description: 'The backend data remains available even when Google Street View cannot load.',
+    title: 'Preview unavailable.',
+    description: 'Select another record or retry when connectivity improves.',
     reason: null,
     targetLabel: null,
     coordinates: null,

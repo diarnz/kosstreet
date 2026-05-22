@@ -9,6 +9,12 @@ export type AuditSuggestionStatus =
 
 export type AuditSuggestionSeverity = 'low' | 'medium' | 'high' | 'critical';
 
+export interface DetectionRegion {
+  center_x: number;
+  center_y: number;
+  radius: number;
+}
+
 export interface BoundingBox {
   x: number;
   y: number;
@@ -28,13 +34,18 @@ export interface AuditSuggestion {
   description?: string | null;
   model_name?: string | null;
   explanation?: string | null;
-  image_url?: string | null;
   image_attribution?: string | null;
   department?: string | null;
   heading?: number | null;
   pitch?: number | null;
+  frame_index?: number | null;
+  detection_regions?: DetectionRegion[];
+  frame_image_url?: string | null;
   reviewer_note?: string | null;
   converted_report_id?: string | null;
+  /** @deprecated Demo-only legacy field; prefer detection_regions */
+  image_url?: string | null;
+  /** @deprecated Demo-only legacy field; prefer detection_regions */
   bounding_box?: BoundingBox | null;
   created_at: string;
 }

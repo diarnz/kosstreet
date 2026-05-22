@@ -36,6 +36,33 @@ export function formatDateTime(value: string): string {
   }).format(date);
 }
 
+export function formatRelativeTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  const diffMs = date.getTime() - Date.now();
+  const diffMinutes = Math.round(diffMs / 60_000);
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+  if (Math.abs(diffMinutes) < 60) {
+    return formatter.format(diffMinutes, 'minute');
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 24) {
+    return formatter.format(diffHours, 'hour');
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  if (Math.abs(diffDays) < 7) {
+    return formatter.format(diffDays, 'day');
+  }
+
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
+}
+
 export function formatCoordinates(latitude: number, longitude: number): string {
   return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 }

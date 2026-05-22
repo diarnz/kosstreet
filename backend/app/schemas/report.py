@@ -54,9 +54,16 @@ class ReportDetail(ReportSummary):
     workflow_events: list[WorkflowEventRead]
 
 
+class DetectionRegion(BaseModel):
+    center_x: float = Field(ge=0, le=1)
+    center_y: float = Field(ge=0, le=1)
+    radius: float = Field(ge=0.04, le=0.18)
+
+
 class ImageAnalysisResult(BaseModel):
     category: IssueCategory | None = None
     confidence: float | None = None
     severity: AuditSuggestionSeverity | None = None
     description: str | None = None
     is_civic_issue: bool = False
+    regions: list[DetectionRegion] = Field(default_factory=list)

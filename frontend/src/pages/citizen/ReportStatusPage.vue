@@ -1,45 +1,36 @@
 <template>
   <CitizenLayout>
-    <AppSectionHeader
-      eyebrow="Report submitted"
-      title="Track your municipal report."
-      description="Keep this tracking ID. KoStreet checks the report-detail endpoint for live workflow status when it is available."
+    <PageHero
+      align="center"
+      eyebrow="Tracking"
+      title="Report status"
+      description="Follow your submission through municipal review."
+      gradient
     />
 
-    <AppCard class="status-card stack" variant="command">
+    <GlassPanel class="status-card animate-scale-in" elevated padding="lg">
       <div class="cluster-between">
         <div>
-          <p class="eyebrow">Tracking ID</p>
+          <p class="command-label">Tracking ID</p>
           <h2>{{ reportId }}</h2>
         </div>
         <StatusPill v-if="reportDetail" :status="reportDetail.status" />
-        <AppBadge v-else tone="warning">Detail pending</AppBadge>
+        <AppBadge v-else tone="warning">Pending</AppBadge>
       </div>
-      <AppBadge v-if="isDemoDetail" tone="warning">Pitch Mode demo record</AppBadge>
-      <p v-if="reportDetail">
-        {{
-          isDemoDetail
-            ? 'This tracking page is showing a prepared demo report for judging reliability.'
-            : 'This tracking page is showing the current backend status for your report.'
-        }}
-      </p>
-      <p v-else>
-        Your report was submitted. Live detail appears here after
-        <code>GET /api/v1/reports/:id</code> is connected by the backend.
-      </p>
-    </AppCard>
+      <AppBadge v-if="isDemoDetail" tone="warning">Demo record</AppBadge>
+    </GlassPanel>
 
-    <AppCard v-if="isLoading" class="stack" variant="inset">
-      <AppLoading label="Loading report detail" />
-    </AppCard>
+    <GlassPanel v-if="isLoading" padding="lg" class="animate-fade-in">
+      <AppLoading label="Loading report" />
+    </GlassPanel>
 
-    <AppCard v-if="error" class="status-error stack" variant="muted">
-      <AppBadge tone="warning">Tracking endpoint pending</AppBadge>
+    <GlassPanel v-if="error" padding="lg" class="status-error animate-fade-in">
+      <AppBadge tone="warning">Unavailable</AppBadge>
       <p>{{ error }}</p>
-      <AppButton variant="secondary" @click="fetchReportDetail">Retry tracking lookup</AppButton>
-    </AppCard>
+      <AppButton variant="secondary" @click="fetchReportDetail">Retry</AppButton>
+    </GlassPanel>
 
-    <AppCard v-if="reportDetail" class="stack" variant="inset">
+    <GlassPanel v-if="reportDetail" padding="lg" class="animate-fade-in">
       <div class="status-detail-grid">
         <div>
           <dt>Category</dt>
@@ -58,33 +49,30 @@
           <dd>{{ formatDateTime(reportDetail.updated_at) }}</dd>
         </div>
         <div>
-          <dt>Coordinates</dt>
+          <dt>Location</dt>
           <dd>{{ formatCoordinates(reportDetail.latitude, reportDetail.longitude) }}</dd>
         </div>
         <div v-if="reportDetail.resolution_note">
-          <dt>Resolution note</dt>
+          <dt>Resolution</dt>
           <dd>{{ reportDetail.resolution_note }}</dd>
         </div>
         <div v-if="reportDetail.rejection_reason">
-          <dt>Rejection reason</dt>
+          <dt>Rejection</dt>
           <dd>{{ reportDetail.rejection_reason }}</dd>
         </div>
       </div>
-    </AppCard>
+    </GlassPanel>
 
-    <AppCard class="stack" variant="inset">
-      <div>
-        <h2>What happens next</h2>
-        <p>The municipality reviews, verifies, assigns, works on, and resolves reports.</p>
-      </div>
+    <GlassPanel padding="lg" class="animate-fade-in">
+      <p class="command-label">Workflow</p>
       <ReportWorkflowTimeline :current-status="reportDetail?.status ?? 'new'" />
-    </AppCard>
+    </GlassPanel>
 
     <ReportWorkflowHistory v-if="reportDetail" :events="reportDetail.workflow_events" />
 
-    <div class="cluster">
-      <RouterLink class="status-link status-link--primary" to="/report">Create another report</RouterLink>
-      <RouterLink class="status-link" to="/dashboard">Open dashboard</RouterLink>
+    <div class="cluster status-actions animate-fade-in">
+      <RouterLink class="status-link status-link--primary" to="/report">New report</RouterLink>
+      <RouterLink class="status-link" to="/dashboard">Dashboard</RouterLink>
     </div>
   </CitizenLayout>
 </template>
@@ -94,9 +82,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
+import GlassPanel from '@/components/common/GlassPanel.vue';
 import AppLoading from '@/components/common/AppLoading.vue';
-import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
+import PageHero from '@/components/common/PageHero.vue';
 import ReportWorkflowHistory from '@/components/reports/ReportWorkflowHistory.vue';
 import ReportWorkflowTimeline from '@/components/reports/ReportWorkflowTimeline.vue';
 import StatusPill from '@/components/reports/StatusPill.vue';
@@ -145,9 +133,7 @@ async function fetchReportDetail() {
     reportDetail.value = null;
     isDemoDetail.value = false;
     error.value =
-      unknownError instanceof Error
-        ? unknownError.message
-        : 'Report detail endpoint is not connected yet. Keep the tracking ID and retry later.';
+      unknownError instanceof Error ? unknownError.message : 'Could not load report details.';
   } finally {
     isLoading.value = false;
   }
@@ -157,25 +143,20 @@ async function fetchReportDetail() {
 <style scoped>
 .status-card h2 {
   max-width: 100%;
-  margin: 0;
+  margin: 0.15rem 0 0;
   overflow-wrap: anywhere;
+  font-family: var(--font-display);
   font-size: clamp(1.3rem, 5vw, 2rem);
-}
-
-.status-card p,
-section p,
-.status-error p {
-  color: var(--text-secondary);
-}
-
-.status-card code {
-  color: var(--text-primary);
-  font-weight: 850;
+  letter-spacing: -0.03em;
 }
 
 .status-error {
   display: grid;
   gap: var(--space-3);
+}
+
+.status-error p {
+  color: var(--text-secondary);
 }
 
 .status-detail-grid {
@@ -189,9 +170,14 @@ section p,
   gap: var(--space-2);
   min-width: 0;
   padding: var(--space-4);
-  border: var(--border-soft);
+  border: 1px solid rgba(23, 33, 26, 0.08);
   border-radius: var(--radius-md);
-  background: rgba(255, 253, 247, 0.58);
+  background: rgba(255, 253, 247, 0.45);
+  transition: transform var(--motion-fast) var(--ease-out-expo);
+}
+
+.status-detail-grid > div:hover {
+  transform: translateY(-2px);
 }
 
 dt {
@@ -210,6 +196,10 @@ dd {
   font-weight: 750;
 }
 
+.status-actions {
+  padding-top: var(--space-2);
+}
+
 .status-link {
   display: inline-flex;
   align-items: center;
@@ -218,6 +208,12 @@ dd {
   border: var(--border-strong);
   border-radius: var(--radius-pill);
   font-weight: 850;
+  transition: transform var(--motion-fast) var(--ease-out-expo), box-shadow var(--motion-fast) ease;
+}
+
+.status-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(23, 33, 26, 0.1);
 }
 
 .status-link--primary {

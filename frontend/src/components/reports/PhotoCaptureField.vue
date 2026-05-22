@@ -1,14 +1,23 @@
 <template>
-  <AppCard class="photo-field stack" variant="inset">
+  <AppCard class="photo-field stack-lg animate-scale-in" variant="default">
     <div class="cluster-between">
       <div>
-        <h2>Photo</h2>
-        <p>Select a photo for local review. Image upload will be connected when the backend endpoint exists.</p>
+        <p class="eyebrow">Step 1</p>
+        <h2>Add a photo of the issue</h2>
       </div>
-      <AppBadge tone="neutral">Local preview only</AppBadge>
+      <AppBadge :tone="modelValue ? 'success' : 'neutral'">
+        {{ modelValue ? 'Added' : 'Optional' }}
+      </AppBadge>
     </div>
 
-    <label class="photo-field__dropzone">
+    <label
+      class="photo-field__dropzone"
+      :class="{ 'photo-field__dropzone--filled': modelValue, 'photo-field__dropzone--drag': isDragging }"
+      @dragenter.prevent="isDragging = true"
+      @dragleave.prevent="isDragging = false"
+      @dragover.prevent
+      @drop.prevent="onDrop"
+    >
       <input
         class="sr-only"
         type="file"
@@ -16,19 +25,30 @@
         capture="environment"
         @change="onFileChange"
       />
-      <span>{{ modelValue ? 'Change image' : 'Choose or take a photo' }}</span>
-      <small>Image files up to {{ maxSizeMb }} MB</small>
+      <div class="photo-field__camera" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path
+            d="M4 8h3l1.5-2h7L17 8h3a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2v-8a2 2 0 012-2z"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="1.8" />
+        </svg>
+      </div>
+      <span class="photo-field__cta">{{ modelValue ? 'Change photo' : 'Tap to capture or upload' }}</span>
+      <small>PNG, JPG up to {{ maxSizeMb }} MB</small>
     </label>
 
     <p v-if="error" class="photo-field__error">{{ error }}</p>
 
-    <div v-if="previewUrl && modelValue" class="photo-field__preview">
+    <div v-if="previewUrl && modelValue" class="photo-field__preview animate-fade-in">
       <img :src="previewUrl" alt="Selected issue photo preview" />
       <div class="photo-field__meta">
         <strong>{{ modelValue.name }}</strong>
-        <span>{{ fileSizeLabel }} · {{ modelValue.type }}</span>
+        <span>{{ fileSizeLabel }}</span>
         <AppButton variant="secondary" size="sm" @click="$emit('update:modelValue', null)">
-          Remove image
+          Remove
         </AppButton>
       </div>
     </div>
@@ -57,6 +77,7 @@ const emit = defineEmits<{
 }>();
 
 const error = ref<string | null>(null);
+const isDragging = ref(false);
 const { previewUrl } = useImagePreview(toRef(props, 'modelValue'));
 
 const fileSizeLabel = computed(() => {
@@ -64,11 +85,8 @@ const fileSizeLabel = computed(() => {
   return `${(props.modelValue.size / 1024 / 1024).toFixed(2)} MB`;
 });
 
-function onFileChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const file = input.files?.[0] ?? null;
+function acceptFile(file: File | null) {
   error.value = null;
-
   if (!file) {
     emit('update:modelValue', null);
     return;
@@ -76,43 +94,79 @@ function onFileChange(event: Event) {
 
   if (!file.type.startsWith('image/')) {
     error.value = 'Please choose an image file.';
-    input.value = '';
     return;
   }
 
   if (file.size > props.maxSizeMb * 1024 * 1024) {
     error.value = `Image must be ${props.maxSizeMb} MB or smaller.`;
-    input.value = '';
     return;
   }
 
   emit('update:modelValue', file);
 }
+
+function onFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  acceptFile(input.files?.[0] ?? null);
+}
+
+function onDrop(event: DragEvent) {
+  isDragging.value = false;
+  acceptFile(event.dataTransfer?.files?.[0] ?? null);
+}
 </script>
 
 <style scoped>
 .photo-field h2 {
-  margin: 0 0 var(--space-2);
-}
-
-.photo-field p {
-  color: var(--text-secondary);
+  margin: 0;
 }
 
 .photo-field__dropzone {
   display: grid;
   gap: var(--space-2);
   place-items: center;
-  min-height: 9rem;
-  padding: var(--space-6);
-  border: 1px dashed rgba(47, 93, 80, 0.34);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 253, 247, 0.58);
+  min-height: 11rem;
+  padding: var(--space-8);
+  border: 2px dashed rgba(47, 93, 80, 0.28);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(217, 144, 47, 0.08), transparent 55%),
+    rgba(255, 253, 247, 0.62);
   cursor: pointer;
   text-align: center;
+  transition:
+    border-color var(--motion-fast) ease,
+    transform var(--motion-fast) var(--ease-out-expo),
+    box-shadow var(--motion-fast) ease;
 }
 
-.photo-field__dropzone span {
+.photo-field__dropzone:hover,
+.photo-field__dropzone--drag {
+  transform: translateY(-2px);
+  border-color: rgba(47, 93, 80, 0.48);
+  box-shadow: var(--shadow-card);
+}
+
+.photo-field__dropzone--filled {
+  min-height: 7rem;
+}
+
+.photo-field__camera {
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  color: var(--color-municipal-green);
+  background: rgba(221, 232, 213, 0.55);
+}
+
+.photo-field__camera svg {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.photo-field__cta {
   color: var(--text-primary);
   font-weight: 900;
 }
@@ -129,7 +183,7 @@ function onFileChange(event: Event) {
 
 .photo-field__preview {
   display: grid;
-  grid-template-columns: minmax(0, 12rem) 1fr;
+  grid-template-columns: minmax(0, 11rem) 1fr;
   gap: var(--space-4);
   align-items: center;
 }
@@ -139,6 +193,7 @@ function onFileChange(event: Event) {
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
   object-fit: cover;
+  box-shadow: var(--shadow-card);
 }
 
 .photo-field__meta {
@@ -152,4 +207,3 @@ function onFileChange(event: Event) {
   }
 }
 </style>
-

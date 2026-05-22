@@ -13,6 +13,7 @@ export interface ReportDraft {
   latitude: number | null;
   longitude: number | null;
   locationAccuracy: number | null;
+  locationLabel: string | null;
   description: string;
   aiSuggestion: AiSuggestion | null;
 }

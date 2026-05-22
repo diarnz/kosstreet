@@ -27,11 +27,10 @@ const classes = computed(() => [
 
 <style scoped>
 .app-card {
-  border: var(--border-soft);
+  border: 1px solid rgba(23, 33, 26, 0.08);
   border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-inset);
+  padding: var(--space-5);
+  background: rgba(255, 253, 247, 0.65);
 }
 
 .app-card--elevated {

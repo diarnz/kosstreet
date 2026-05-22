@@ -1,23 +1,27 @@
 <template>
-  <div class="app-shell surface-grid">
+  <div class="app-shell">
+    <div class="app-shell__bg" aria-hidden="true">
+      <span class="app-shell__orb app-shell__orb--green" />
+      <span class="app-shell__orb app-shell__orb--amber" />
+      <span class="app-shell__orb app-shell__orb--blue" />
+      <div class="app-shell__grid" />
+    </div>
+
     <PrimaryNav />
-    <main class="app-shell__main" :class="`app-shell__main--${contentWidth}`">
-      <PitchModeBanner v-if="uiStore.demoMode" compact class="app-shell__pitch-banner" data-mode="demo" />
-      <slot />
+    <main class="app-shell__main">
+      <div class="app-shell__container animate-fade-up" :class="`app-shell__container--${contentWidth}`">
+        <slot />
+      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import PitchModeBanner from '@/components/common/PitchModeBanner.vue';
 import PrimaryNav from '@/components/navigation/PrimaryNav.vue';
-import { useUiStore } from '@/stores/ui';
-
-const uiStore = useUiStore();
 
 withDefaults(
   defineProps<{
-    contentWidth?: 'narrow' | 'default' | 'wide';
+    contentWidth?: 'narrow' | 'default' | 'wide' | 'full';
   }>(),
   {
     contentWidth: 'default',
@@ -27,60 +31,96 @@ withDefaults(
 
 <style scoped>
 .app-shell {
+  --shell-pad-x: clamp(1rem, 4vw, 2.5rem);
+  --shell-pad-y: clamp(1rem, 3vw, 1.75rem);
+
   position: relative;
-  overflow-x: hidden;
+  isolation: isolate;
+  display: grid;
+  grid-template-rows: auto 1fr;
   min-height: 100vh;
-  padding: clamp(1rem, 3vw, 2rem);
-  background:
-    radial-gradient(circle at 8% 4%, rgba(217, 144, 47, 0.18), transparent 30rem),
-    radial-gradient(circle at 92% 16%, rgba(47, 93, 80, 0.13), transparent 28rem),
-    linear-gradient(135deg, var(--surface-app) 0%, var(--color-sage-surface) 100%);
+  overflow-x: hidden;
+  background: #ebe6dc;
 }
 
-.app-shell::before {
-  content: "";
+.app-shell__bg {
   position: fixed;
-  inset: auto -8rem -12rem auto;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.app-shell__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: float-orb 18s ease-in-out infinite;
+}
+
+.app-shell__orb--green {
+  top: -8rem;
+  left: -6rem;
   width: 28rem;
   height: 28rem;
-  pointer-events: none;
-  border: 1px solid rgba(47, 93, 80, 0.12);
-  border-radius: 46% 54% 58% 42%;
-  transform: rotate(-18deg);
+  background: radial-gradient(circle, rgba(47, 93, 80, 0.35) 0%, transparent 70%);
+}
+
+.app-shell__orb--amber {
+  top: 20%;
+  right: -10rem;
+  width: 32rem;
+  height: 32rem;
+  background: radial-gradient(circle, rgba(217, 144, 47, 0.28) 0%, transparent 70%);
+  animation-delay: -6s;
+}
+
+.app-shell__orb--blue {
+  bottom: -12rem;
+  left: 30%;
+  width: 36rem;
+  height: 36rem;
+  background: radial-gradient(circle, rgba(63, 110, 140, 0.2) 0%, transparent 70%);
+  animation-delay: -12s;
+}
+
+.app-shell__grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(23, 33, 26, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 33, 26, 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 85%);
 }
 
 .app-shell__main {
   position: relative;
-  width: min(100%, 1120px);
-  margin: var(--space-10) auto 0;
-  padding: clamp(1.4rem, 4vw, 4rem);
-  border: var(--border-soft);
-  border-radius: var(--radius-xl);
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(14px);
+  z-index: 1;
+  display: grid;
+  align-content: start;
+  gap: var(--space-4);
+  padding: var(--shell-pad-y) var(--shell-pad-x) clamp(2rem, 5vw, 3rem);
 }
 
-.app-shell__main--narrow {
-  width: min(100%, 860px);
+.app-shell__container {
+  width: 100%;
+  margin-inline: auto;
 }
 
-.app-shell__main--wide {
-  width: min(100%, 1240px);
+.app-shell__container--narrow {
+  max-width: 720px;
 }
 
-.app-shell__pitch-banner {
-  margin-bottom: var(--space-6);
+.app-shell__container--default {
+  max-width: 1080px;
 }
 
-@media (max-width: 620px) {
-  .app-shell {
-    padding: var(--space-4);
-  }
+.app-shell__container--wide {
+  max-width: 1440px;
+}
 
-  .app-shell__main {
-    margin-top: var(--space-6);
-    border-radius: var(--radius-lg);
-  }
+.app-shell__container--full {
+  max-width: none;
 }
 </style>
