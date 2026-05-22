@@ -16,6 +16,12 @@
       </div>
     </div>
 
+    <PitchModeBanner
+      v-if="reportsStore.usingDemoReports"
+      data-mode="demo"
+      message="Prepared demo reports are shown because live backend reports are empty or unavailable."
+    />
+
     <AppCard v-if="reportsStore.error" class="dashboard-error" variant="inset">
       <AppBadge tone="danger">Backend error</AppBadge>
       <p>{{ reportsStore.error }}</p>
@@ -42,13 +48,25 @@
 
     <section class="dashboard-workspace">
       <ReportQueue
+        :is-demo-data="reportsStore.usingDemoReports"
         :is-loading="reportsStore.isLoading"
         :reports="reportsStore.filteredReports"
         :selected-report-id="reportsStore.selectedReportId"
         @select="reportsStore.selectReport"
       />
 
-      <ReportDetailPanel :report="reportsStore.selectedReport" />
+      <ReportDetailPanel
+        :allowed-next-statuses="reportsStore.allowedNextStatuses"
+        :detail-error="reportsStore.selectedDetailError"
+        :is-detail-loading="reportsStore.selectedDetailIsLoading"
+        :is-updating-status="reportsStore.isUpdatingStatus"
+        :is-demo-data="reportsStore.usingDemoReports"
+        :report="reportsStore.selectedReport"
+        :report-detail="reportsStore.selectedReportDetail"
+        :status-update-error="reportsStore.statusUpdateError"
+        @retry-detail="fetchSelectedReportDetail"
+        @update-status="reportsStore.updateSelectedReportStatus"
+      />
     </section>
   </DashboardLayout>
 </template>
@@ -58,6 +76,7 @@ import { onMounted, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
+import PitchModeBanner from '@/components/common/PitchModeBanner.vue';
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
 import DashboardFilters from '@/components/dashboard/DashboardFilters.vue';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue';
@@ -83,6 +102,22 @@ watch(
   },
   { immediate: true },
 );
+
+watch(
+  () => reportsStore.selectedReportId,
+  (reportId) => {
+    if (reportId) {
+      void reportsStore.fetchReportDetail(reportId);
+    }
+  },
+  { immediate: true },
+);
+
+function fetchSelectedReportDetail() {
+  if (reportsStore.selectedReportId) {
+    void reportsStore.fetchReportDetail(reportsStore.selectedReportId);
+  }
+}
 </script>
 
 <style scoped>

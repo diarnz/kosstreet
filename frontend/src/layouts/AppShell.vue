@@ -2,13 +2,18 @@
   <div class="app-shell surface-grid">
     <PrimaryNav />
     <main class="app-shell__main" :class="`app-shell__main--${contentWidth}`">
+      <PitchModeBanner v-if="uiStore.demoMode" compact class="app-shell__pitch-banner" data-mode="demo" />
       <slot />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
+import PitchModeBanner from '@/components/common/PitchModeBanner.vue';
 import PrimaryNav from '@/components/navigation/PrimaryNav.vue';
+import { useUiStore } from '@/stores/ui';
+
+const uiStore = useUiStore();
 
 withDefaults(
   defineProps<{
@@ -62,6 +67,10 @@ withDefaults(
 
 .app-shell__main--wide {
   width: min(100%, 1240px);
+}
+
+.app-shell__pitch-banner {
+  margin-bottom: var(--space-6);
 }
 
 @media (max-width: 620px) {

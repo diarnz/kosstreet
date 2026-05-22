@@ -56,6 +56,22 @@
           <span v-for="step in loopSteps" :key="step">{{ step }}</span>
         </div>
       </AppCard>
+
+      <AppCard v-if="uiStore.demoMode" variant="inset" class="pitch-path stack">
+        <div class="cluster-between">
+          <div>
+            <p class="eyebrow">Pitch path</p>
+            <h2>Three-minute judging route</h2>
+          </div>
+          <AppBadge tone="warning">Demo fixtures active</AppBadge>
+        </div>
+        <div class="pitch-path__steps">
+          <RouterLink to="/report">Citizen report</RouterLink>
+          <RouterLink to="/dashboard">Municipal dashboard</RouterLink>
+          <RouterLink to="/audit">AI Street Audit</RouterLink>
+          <RouterLink to="/report/status/demo-report-pothole-001">Tracking page</RouterLink>
+        </div>
+      </AppCard>
     </div>
   </AppShell>
 </template>
@@ -66,8 +82,10 @@ import AppCard from '@/components/common/AppCard.vue';
 import FeaturePanel from '@/components/common/FeaturePanel.vue';
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
 import AppShell from '@/layouts/AppShell.vue';
+import { useUiStore } from '@/stores/ui';
 
 const loopSteps = ['Detect', 'Verify', 'Route', 'Resolve', 'Measure'];
+const uiStore = useUiStore();
 </script>
 
 <style scoped>
@@ -110,8 +128,35 @@ const loopSteps = ['Detect', 'Verify', 'Route', 'Resolve', 'Measure'];
   text-align: center;
 }
 
+.pitch-path h2 {
+  margin: 0;
+}
+
+.pitch-path__steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.pitch-path__steps a {
+  display: grid;
+  place-items: center;
+  min-height: 3rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  background: rgba(255, 253, 247, 0.62);
+  color: var(--text-primary);
+  font-weight: 850;
+  text-align: center;
+}
+
 @media (max-width: 760px) {
   .loop-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .pitch-path__steps {
     grid-template-columns: 1fr;
   }
 }

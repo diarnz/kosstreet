@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import { createAuditRun, listAuditRuns } from '@/api/auditRuns';
+import { demoAuditRuns } from '@/demo/demoAuditRuns';
+import { useUiStore } from '@/stores/ui';
 import type {
   AuditRunCreatePayload,
   AuditRunFiltersState,
@@ -37,10 +39,20 @@ export const useAuditRunsStore = defineStore('auditRuns', {
     filters: defaultFilters(),
   }),
   getters: {
+    usingDemoRuns(state): boolean {
+      const uiStore = useUiStore();
+      return uiStore.demoMode && (state.runs.length === 0 || Boolean(state.error));
+    },
+    dataMode(): 'live' | 'demo' {
+      return this.usingDemoRuns ? 'demo' : 'live';
+    },
+    visibleRuns(state): AuditRunSummary[] {
+      return this.usingDemoRuns ? demoAuditRuns : state.runs;
+    },
     filteredRuns(state): AuditRunSummary[] {
       const search = state.filters.search.trim().toLowerCase();
 
-      return state.runs.filter((run) => {
+      return this.visibleRuns.filter((run) => {
         const matchesStatus = state.filters.status === 'all' || run.status === state.filters.status;
         const searchTarget = [
           run.id,
@@ -62,15 +74,15 @@ export const useAuditRunsStore = defineStore('auditRuns', {
         return null;
       }
 
-      return state.runs.find((run) => run.id === state.selectedRunId) ?? null;
+      return this.visibleRuns.find((run) => run.id === state.selectedRunId) ?? null;
     },
-    metrics(state): AuditRunMetrics {
+    metrics(): AuditRunMetrics {
       return {
-        total: state.runs.length,
-        queued: state.runs.filter((run) => run.status === 'queued').length,
-        running: state.runs.filter((run) => run.status === 'running').length,
-        completed: state.runs.filter((run) => run.status === 'completed').length,
-        failed: state.runs.filter((run) => run.status === 'failed').length,
+        total: this.visibleRuns.length,
+        queued: this.visibleRuns.filter((run) => run.status === 'queued').length,
+        running: this.visibleRuns.filter((run) => run.status === 'running').length,
+        completed: this.visibleRuns.filter((run) => run.status === 'completed').length,
+        failed: this.visibleRuns.filter((run) => run.status === 'failed').length,
       };
     },
   },

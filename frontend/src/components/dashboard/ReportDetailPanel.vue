@@ -1,51 +1,87 @@
 <template>
   <AppCard class="report-detail stack" variant="command">
-    <template v-if="report">
+    <template v-if="displayReport">
       <div class="cluster-between">
         <div>
           <p class="eyebrow">Selected Report</p>
-          <h2>{{ categoryLabels[report.category] }}</h2>
+          <h2>{{ categoryLabels[displayReport.category] }}</h2>
         </div>
-        <StatusPill :status="report.status" />
+        <StatusPill :status="displayReport.status" />
       </div>
 
       <div class="report-detail__badges">
-        <IssueCategoryBadge :category="report.category" />
-        <ReportSourceBadge :source="report.source" />
+        <IssueCategoryBadge :category="displayReport.category" />
+        <ReportSourceBadge :source="displayReport.source" />
+        <AppBadge v-if="isDemoData" tone="warning">Demo record</AppBadge>
       </div>
 
       <dl class="report-detail__grid">
         <div>
           <dt>Tracking ID</dt>
-          <dd>{{ report.id }}</dd>
+          <dd>{{ displayReport.id }}</dd>
         </div>
         <div>
           <dt>Coordinates</dt>
-          <dd>{{ formatCoordinates(report.latitude, report.longitude) }}</dd>
+          <dd>{{ formatCoordinates(displayReport.latitude, displayReport.longitude) }}</dd>
         </div>
         <div>
           <dt>Created</dt>
-          <dd>{{ formatDateTime(report.created_at) }}</dd>
+          <dd>{{ formatDateTime(displayReport.created_at) }}</dd>
         </div>
         <div>
           <dt>AI confidence</dt>
-          <dd>{{ formatConfidence(report.confidence) }}</dd>
+          <dd>{{ formatConfidence(displayReport.confidence) }}</dd>
+        </div>
+        <div v-if="reportDetail">
+          <dt>Updated</dt>
+          <dd>{{ formatDateTime(reportDetail.updated_at) }}</dd>
         </div>
         <div class="report-detail__wide">
           <dt>Description</dt>
-          <dd>{{ report.description || 'No description provided.' }}</dd>
+          <dd>{{ displayReport.description || 'No description provided.' }}</dd>
+        </div>
+        <div v-if="reportDetail?.resolution_note" class="report-detail__wide">
+          <dt>Resolution note</dt>
+          <dd>{{ reportDetail.resolution_note }}</dd>
+        </div>
+        <div v-if="reportDetail?.rejection_reason" class="report-detail__wide">
+          <dt>Rejection reason</dt>
+          <dd>{{ reportDetail.rejection_reason }}</dd>
         </div>
       </dl>
 
-      <DepartmentSuggestion :category="report.category" />
+      <DepartmentSuggestion :category="displayReport.category" />
+
+      <AppCard v-if="isDetailLoading" variant="inset">
+        <AppLoading label="Loading workflow detail" />
+      </AppCard>
+
+      <AppCard v-if="detailError" class="report-detail__notice" variant="muted">
+        <div class="cluster-between">
+          <AppBadge tone="warning">Detail endpoint pending</AppBadge>
+          <AppButton size="sm" variant="secondary" @click="$emit('retry-detail')">Retry detail</AppButton>
+        </div>
+        <p>{{ detailError }}</p>
+      </AppCard>
 
       <AppCard variant="inset" class="stack">
         <div class="cluster-between">
-          <AppBadge tone="neutral">Read-only workflow</AppBadge>
-          <span class="muted">Status mutation requires backend PATCH support</span>
+          <AppBadge tone="neutral">Workflow status</AppBadge>
+          <span class="muted">Status changes require backend confirmation</span>
         </div>
-        <ReportWorkflowTimeline :current-status="report.status" />
+        <ReportWorkflowTimeline :current-status="displayReport.status" />
       </AppCard>
+
+      <ReportStatusActions
+        :allowed-statuses="allowedNextStatuses"
+        :current-status="displayReport.status"
+        :error="statusUpdateError"
+        :is-demo-data="isDemoData"
+        :is-updating="isUpdatingStatus"
+        @update="$emit('update-status', $event)"
+      />
+
+      <ReportWorkflowHistory :events="reportDetail?.workflow_events ?? []" />
     </template>
 
     <AppEmptyState
@@ -59,24 +95,54 @@
 
 <script setup lang="ts">
 import AppBadge from '@/components/common/AppBadge.vue';
+import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import AppEmptyState from '@/components/common/AppEmptyState.vue';
+import AppLoading from '@/components/common/AppLoading.vue';
 import IssueCategoryBadge from '@/components/reports/IssueCategoryBadge.vue';
+import ReportStatusActions from '@/components/reports/ReportStatusActions.vue';
+import ReportWorkflowHistory from '@/components/reports/ReportWorkflowHistory.vue';
 import ReportWorkflowTimeline from '@/components/reports/ReportWorkflowTimeline.vue';
 import StatusPill from '@/components/reports/StatusPill.vue';
 import DepartmentSuggestion from './DepartmentSuggestion.vue';
 import ReportSourceBadge from './ReportSourceBadge.vue';
-import type { ReportSummary } from '@/types/report';
+import type { ReportDetail, ReportStatusUpdatePayload, ReportSummary, TicketStatus } from '@/types/report';
 import {
   categoryLabels,
   formatConfidence,
   formatCoordinates,
   formatDateTime,
 } from '@/utils/reportFormatting';
+import { computed } from 'vue';
 
-defineProps<{
+const props = withDefaults(
+  defineProps<{
   report: ReportSummary | null;
+  reportDetail?: ReportDetail | null;
+  isDetailLoading?: boolean;
+  detailError?: string | null;
+  allowedNextStatuses?: TicketStatus[];
+  isUpdatingStatus?: boolean;
+  statusUpdateError?: string | null;
+  isDemoData?: boolean;
+}>(),
+  {
+    reportDetail: null,
+    isDetailLoading: false,
+    detailError: null,
+    allowedNextStatuses: () => [],
+    isUpdatingStatus: false,
+    statusUpdateError: null,
+    isDemoData: false,
+  },
+);
+
+defineEmits<{
+  'update-status': [payload: ReportStatusUpdatePayload];
+  'retry-detail': [];
 }>();
+
+const displayReport = computed(() => props.reportDetail ?? props.report);
 </script>
 
 <style scoped>
@@ -96,6 +162,16 @@ defineProps<{
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
   margin: 0;
+}
+
+.report-detail__notice {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report-detail__notice p {
+  margin: 0;
+  color: var(--text-secondary);
 }
 
 .report-detail__grid > div {

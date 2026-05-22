@@ -12,12 +12,14 @@
       <button
         v-for="option in options"
         :key="option.value"
+        ref="optionButtons"
         class="category-selector__option"
         :class="{ 'category-selector__option--selected': modelValue === option.value }"
         type="button"
         role="radio"
         :aria-checked="modelValue === option.value"
         @click="$emit('update:modelValue', option.value)"
+        @keydown="onOptionKeydown($event, option.value)"
       >
         <IssueCategoryBadge :category="option.value" />
         <span>{{ option.description }}</span>
@@ -32,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import IssueCategoryBadge from './IssueCategoryBadge.vue';
@@ -41,9 +44,11 @@ defineProps<{
   modelValue: IssueCategory | null;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
   'update:modelValue': [value: IssueCategory];
 }>();
+
+const optionButtons = ref<HTMLButtonElement[]>([]);
 
 const options: Array<{ value: IssueCategory; description: string }> = [
   { value: 'pothole', description: 'Road surface damage or asphalt break.' },
@@ -53,6 +58,40 @@ const options: Array<{ value: IssueCategory; description: string }> = [
   { value: 'damaged_sign', description: 'Damaged traffic or public sign.' },
   { value: 'other', description: 'Another visible civic issue.' },
 ];
+
+function selectByOffset(currentValue: IssueCategory, offset: number) {
+  const currentIndex = options.findIndex((option) => option.value === currentValue);
+  const nextIndex = (currentIndex + offset + options.length) % options.length;
+  const nextValue = options[nextIndex].value;
+
+  emit('update:modelValue', nextValue);
+  optionButtons.value[nextIndex]?.focus();
+}
+
+function onOptionKeydown(event: KeyboardEvent, value: IssueCategory) {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    event.preventDefault();
+    selectByOffset(value, 1);
+  }
+
+  if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    selectByOffset(value, -1);
+  }
+
+  if (event.key === 'Home') {
+    event.preventDefault();
+    emit('update:modelValue', options[0].value);
+    optionButtons.value[0]?.focus();
+  }
+
+  if (event.key === 'End') {
+    event.preventDefault();
+    const lastIndex = options.length - 1;
+    emit('update:modelValue', options[lastIndex].value);
+    optionButtons.value[lastIndex]?.focus();
+  }
+}
 </script>
 
 <style scoped>

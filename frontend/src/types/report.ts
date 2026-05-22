@@ -28,6 +28,24 @@ export interface ReportSummary {
   created_at: string;
 }
 
+export interface ReportWorkflowEvent {
+  id: string;
+  report_id: string;
+  from_status?: TicketStatus | null;
+  to_status: TicketStatus;
+  note?: string | null;
+  created_at: string;
+  actor_type: 'municipality' | 'system';
+  actor_label: string;
+}
+
+export interface ReportDetail extends ReportSummary {
+  updated_at: string;
+  resolution_note?: string | null;
+  rejection_reason?: string | null;
+  workflow_events: ReportWorkflowEvent[];
+}
+
 export interface ReportCreatePayload {
   category: IssueCategory;
   latitude: number;
@@ -35,4 +53,9 @@ export interface ReportCreatePayload {
   source: 'citizen';
   description?: string;
   confidence?: number;
+}
+
+export interface ReportStatusUpdatePayload {
+  status: TicketStatus;
+  note?: string | null;
 }

@@ -11,11 +11,25 @@
       <RouterLink v-for="item in items" :key="item.to" class="primary-nav__link" :to="item.to">
         {{ item.label }}
       </RouterLink>
+      <button
+        class="primary-nav__demo-toggle"
+        :class="{ 'primary-nav__demo-toggle--active': uiStore.demoMode }"
+        :aria-pressed="uiStore.demoMode"
+        :aria-label="uiStore.demoMode ? 'Disable Pitch Mode' : 'Enable Pitch Mode'"
+        type="button"
+        @click="uiStore.toggleDemoMode"
+      >
+        {{ uiStore.demoMode ? 'Pitch Mode On' : 'Pitch Mode' }}
+      </button>
     </div>
   </nav>
 </template>
 
 <script setup lang="ts">
+import { useUiStore } from '@/stores/ui';
+
+const uiStore = useUiStore();
+
 const items = [
   { to: '/report', label: 'Report' },
   { to: '/dashboard', label: 'Dashboard' },
@@ -42,7 +56,8 @@ const items = [
 }
 
 .primary-nav__brand,
-.primary-nav__link {
+.primary-nav__link,
+.primary-nav__demo-toggle {
   display: inline-flex;
   align-items: center;
   min-height: 2.5rem;
@@ -78,7 +93,8 @@ const items = [
   gap: var(--space-2);
 }
 
-.primary-nav__link {
+.primary-nav__link,
+.primary-nav__demo-toggle {
   padding: 0 var(--space-4);
   color: var(--text-secondary);
   transition:
@@ -87,7 +103,15 @@ const items = [
     box-shadow 160ms ease;
 }
 
-.primary-nav__link:hover {
+.primary-nav__demo-toggle {
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 253, 247, 0.42);
+  font-weight: 850;
+}
+
+.primary-nav__link:hover,
+.primary-nav__demo-toggle:hover {
   color: var(--text-primary);
   background: rgba(255, 253, 247, 0.5);
 }
@@ -96,6 +120,12 @@ const items = [
   color: var(--text-primary);
   background: rgba(255, 253, 247, 0.86);
   box-shadow: inset 0 0 0 1px rgba(23, 33, 26, 0.12);
+}
+
+.primary-nav__demo-toggle--active {
+  color: var(--text-primary);
+  background: rgba(255, 247, 225, 0.94);
+  box-shadow: inset 0 0 0 1px rgba(217, 144, 47, 0.38);
 }
 
 @media (max-width: 620px) {
@@ -108,7 +138,8 @@ const items = [
     width: 100%;
   }
 
-  .primary-nav__link {
+  .primary-nav__link,
+  .primary-nav__demo-toggle {
     flex: 1 1 auto;
     justify-content: center;
   }
