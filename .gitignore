@@ -34,3 +34,10 @@ ai/models/*
 !ai/data/processed/.gitkeep
 !ai/models/.gitkeep
 
+# Demo images and pre-computed results (large binary / team photos)
+ai/data/demo/*.jpg
+ai/data/demo/*.jpeg
+ai/data/demo/*.png
+ai/data/demo/*.webp
+ai/data/demo/audit_results.json
+
