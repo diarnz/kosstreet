@@ -6,7 +6,10 @@
           <p class="eyebrow">Selected audit run</p>
           <h2>{{ run.route_name }}</h2>
         </div>
-        <AuditRunStatusPill :status="run.status" />
+        <div class="cluster">
+          <AuditRunStatusPill :status="run.status" />
+          <AppBadge v-if="isDemoData" tone="warning">Demo run</AppBadge>
+        </div>
       </div>
 
       <dl class="audit-run-detail__grid">
@@ -38,9 +41,11 @@
           <AppBadge tone="neutral">Human-in-the-loop</AppBadge>
         </div>
         <p>
-          This run is a real backend record. Backend and AI services own Street View or approved
-          imagery retrieval, PaliGemma/Gemma analysis, confidence scoring, deduplication, and status
-          progression.
+          {{
+            isDemoData
+              ? 'This is a prepared Pitch Mode audit run. It demonstrates the review workflow without claiming live scanning.'
+              : 'This run is a real backend record. Backend and AI services own Street View or approved imagery retrieval, PaliGemma/Gemma analysis, confidence scoring, deduplication, and status progression.'
+          }}
         </p>
       </AppCard>
 
@@ -65,9 +70,15 @@ import { auditRunStatusDescriptions, formatAuditDateTime } from '@/utils/auditFo
 import AuditRunStatusPill from './AuditRunStatusPill.vue';
 import AuditSuggestionUnavailablePanel from './AuditSuggestionUnavailablePanel.vue';
 
-defineProps<{
-  run: AuditRunSummary | null;
-}>();
+withDefaults(
+  defineProps<{
+    run: AuditRunSummary | null;
+    isDemoData?: boolean;
+  }>(),
+  {
+    isDemoData: false,
+  },
+);
 </script>
 
 <style scoped>

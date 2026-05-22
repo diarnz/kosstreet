@@ -4,5 +4,11 @@ import App from './App.vue';
 import { router } from './router';
 import 'leaflet/dist/leaflet.css';
 import './styles/main.css';
+import { useUiStore } from './stores/ui';
 
-createApp(App).use(createPinia()).use(router).mount('#app');
+const app = createApp(App);
+const pinia = createPinia();
+
+app.use(pinia);
+useUiStore(pinia).hydrateDemoMode();
+app.use(router).mount('#app');

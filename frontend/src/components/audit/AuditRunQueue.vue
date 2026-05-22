@@ -23,11 +23,14 @@
         :class="{ 'audit-run-queue__item--selected': run.id === selectedRunId }"
         type="button"
         role="listitem"
+        :aria-pressed="run.id === selectedRunId"
+        :aria-label="`Select audit run ${run.route_name}`"
         @click="$emit('select', run.id)"
       >
         <span class="cluster">
           <AuditRunStatusPill :status="run.status" />
           <AppBadge tone="source-ai-audit" size="sm">AI Street Audit</AppBadge>
+          <AppBadge v-if="isDemoData" tone="warning" size="sm">Demo</AppBadge>
         </span>
         <strong>{{ run.route_name }}</strong>
         <span class="audit-run-queue__meta">
@@ -52,6 +55,7 @@ defineProps<{
   runs: AuditRunSummary[];
   selectedRunId: string | null;
   isLoading: boolean;
+  isDemoData?: boolean;
 }>();
 
 defineEmits<{

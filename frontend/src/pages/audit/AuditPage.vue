@@ -18,6 +18,12 @@
       </div>
     </div>
 
+    <PitchModeBanner
+      v-if="auditRunsStore.usingDemoRuns"
+      data-mode="demo"
+      message="Prepared demo audit runs are shown because live backend audit data is empty or unavailable."
+    />
+
     <AppCard v-if="auditRunsStore.error" class="audit-error" variant="inset">
       <AppBadge tone="danger">Backend error</AppBadge>
       <p>{{ auditRunsStore.error }}</p>
@@ -57,14 +63,20 @@
 
     <section class="audit-workspace">
       <AuditRunQueue
+        :is-demo-data="auditRunsStore.usingDemoRuns"
         :is-loading="auditRunsStore.isLoading"
         :runs="auditRunsStore.filteredRuns"
         :selected-run-id="auditRunsStore.selectedRunId"
         @select="auditRunsStore.selectRun"
       />
 
-      <AuditRunDetailPanel :run="auditRunsStore.selectedRun" />
+      <AuditRunDetailPanel :is-demo-data="auditRunsStore.usingDemoRuns" :run="auditRunsStore.selectedRun" />
     </section>
+
+    <DemoAuditSuggestionPanel
+      v-if="uiStore.demoMode"
+      :suggestions="demoAuditSuggestions"
+    />
   </DashboardLayout>
 </template>
 
@@ -73,6 +85,8 @@ import { onMounted, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
+import PitchModeBanner from '@/components/common/PitchModeBanner.vue';
+import DemoAuditSuggestionPanel from '@/components/audit/DemoAuditSuggestionPanel.vue';
 import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
 import AuditRunDetailPanel from '@/components/audit/AuditRunDetailPanel.vue';
 import AuditRunFilters from '@/components/audit/AuditRunFilters.vue';
@@ -80,10 +94,13 @@ import AuditRunForm from '@/components/audit/AuditRunForm.vue';
 import AuditRunMetrics from '@/components/audit/AuditRunMetrics.vue';
 import AuditRunQueue from '@/components/audit/AuditRunQueue.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
+import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
 import { useAuditRunsStore } from '@/stores/auditRuns';
+import { useUiStore } from '@/stores/ui';
 import { formatAuditDateTime } from '@/utils/auditFormatting';
 
 const auditRunsStore = useAuditRunsStore();
+const uiStore = useUiStore();
 
 const principles = ['Suggested, not automatic', 'Confidence shown when returned', 'Human verified', 'Ticket-ready after backend conversion'];
 

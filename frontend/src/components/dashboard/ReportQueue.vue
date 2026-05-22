@@ -23,12 +23,15 @@
         :class="{ 'report-queue__item--selected': report.id === selectedReportId }"
         type="button"
         role="listitem"
+        :aria-pressed="report.id === selectedReportId"
+        :aria-label="`Select ${categoryLabels[report.category]} report ${report.id}`"
         @click="$emit('select', report.id)"
       >
         <span class="report-queue__topline">
           <IssueCategoryBadge :category="report.category" />
           <StatusPill :status="report.status" />
           <ReportSourceBadge :source="report.source" />
+          <AppBadge v-if="isDemoData" tone="warning" size="sm">Demo</AppBadge>
         </span>
         <strong>{{ categoryLabels[report.category] }}</strong>
         <span class="report-queue__meta">
@@ -57,6 +60,7 @@ defineProps<{
   reports: ReportSummary[];
   selectedReportId: string | null;
   isLoading: boolean;
+  isDemoData?: boolean;
 }>();
 
 defineEmits<{

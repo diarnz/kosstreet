@@ -133,6 +133,19 @@ Not allowed:
 - Fake upload behavior
 - Fake scan progress
 
+## Pitch Mode
+
+Pitch Mode is allowed only for hackathon demo reliability.
+
+Rules:
+
+- Demo records must be visibly labeled as demo records.
+- Demo AI suggestions must be labeled as demo scenarios, not live model output.
+- Pitch Mode banners should explain when prepared fixtures are shown because backend data is empty or unavailable.
+- Demo data must never be presented as live backend truth.
+- Status updates on demo records must not appear persisted.
+- Do not show restricted imagery in demo suggestion cards unless the team has approved the source and usage rights.
+
 ## Motion
 
 Use motion sparingly.

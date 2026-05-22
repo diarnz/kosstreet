@@ -39,7 +39,7 @@ const route = useRoute();
 const auditRunsStore = useAuditRunsStore();
 
 const runId = computed(() => String(route.params.runId));
-const matchedRun = computed(() => auditRunsStore.runs.find((run) => run.id === runId.value) ?? null);
+const matchedRun = computed(() => auditRunsStore.visibleRuns.find((run) => run.id === runId.value) ?? null);
 
 onMounted(async () => {
   await auditRunsStore.fetchRuns();
