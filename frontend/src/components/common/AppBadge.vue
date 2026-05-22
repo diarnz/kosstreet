@@ -11,7 +11,7 @@ import type { BadgeTone } from '@/types/ui';
 const props = withDefaults(
   defineProps<{
     tone?: BadgeTone;
-    size?: 'sm' | 'md';
+    size?: 'xs' | 'sm' | 'md';
   }>(),
   {
     tone: 'neutral',
@@ -33,6 +33,11 @@ const classes = computed(() => [`app-badge--${props.tone}`, `app-badge--${props.
   letter-spacing: 0.01em;
   line-height: 1;
   white-space: nowrap;
+}
+
+.app-badge--xs {
+  padding: 0.18rem 0.42rem;
+  font-size: 0.62rem;
 }
 
 .app-badge--sm {

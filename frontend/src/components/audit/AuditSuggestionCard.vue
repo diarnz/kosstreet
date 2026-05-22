@@ -42,7 +42,23 @@
       </div>
     </dl>
 
-    <AppCard class="audit-suggestion-card__evidence" variant="muted">
+    <AppCard v-if="!compact && suggestion.frame_image_url" class="audit-suggestion-card__evidence" variant="muted">
+      <AnalyzedFrameViewer
+        layout="compact"
+        :category="suggestion.category"
+        :confidence="suggestion.confidence"
+        :description="suggestion.description ?? undefined"
+        :frame-index="suggestion.frame_index ?? undefined"
+        :heading="suggestion.heading ?? undefined"
+        :image-url="suggestion.frame_image_url"
+        :latitude="suggestion.latitude"
+        :longitude="suggestion.longitude"
+        :pitch="suggestion.pitch ?? undefined"
+        :regions="suggestion.detection_regions ?? []"
+        :severity="suggestion.severity ?? undefined"
+        :show-metadata="false"
+      />
+
       <div class="cluster-between">
         <AppBadge tone="source-ai-audit">Evidence</AppBadge>
         <span>{{ suggestion.image_attribution ?? 'Attribution not returned' }}</span>
@@ -52,12 +68,8 @@
         class="audit-suggestion-card__street-view-link"
         :to="{ name: 'street-audit-suggestion-detail', params: { suggestionId: suggestion.id } }"
       >
-        Open Google Street View context
+        Open full analyzed frame and Street View context
       </RouterLink>
-      <p v-if="hasHiddenProviderUrl" class="muted">
-        Street View evidence URL is stored by the backend. Raw provider URLs are not rendered because
-        they may contain API credentials.
-      </p>
     </AppCard>
 
     <form class="audit-suggestion-card__review" @submit.prevent="submitReview">
@@ -120,6 +132,7 @@ import { computed, ref, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
+import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import type { AuditSuggestion, AuditSuggestionReviewPayload } from '@/types/detection';
 import type { BadgeTone } from '@/types/ui';
 import {
@@ -131,6 +144,7 @@ import {
 
 const props = defineProps<{
   suggestion: AuditSuggestion;
+  compact?: boolean;
   isReviewing?: boolean;
   isConverting?: boolean;
   reviewError?: string | null;
@@ -188,7 +202,6 @@ const categoryTone = computed<BadgeTone>(
   () => `category-${props.suggestion.category.replace(/_/g, '-')}` as BadgeTone,
 );
 const statusLabel = computed(() => statusLabels[props.suggestion.status]);
-const hasHiddenProviderUrl = computed(() => Boolean(props.suggestion.image_url));
 
 function submitReview() {
   emit('review', props.suggestion.id, {

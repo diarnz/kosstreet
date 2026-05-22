@@ -1,57 +1,28 @@
 <template>
-  <AppCard class="audit-run-form stack" variant="command">
-    <div>
-      <p class="eyebrow">Create audit run</p>
-      <h2>Start a backend street-audit job</h2>
-      <p>
-        The frontend submits the route request. Backend orchestration and the AI pipeline own imagery
-        retrieval, model inference, and status progression.
-      </p>
-    </div>
-
+  <section class="audit-run-form">
     <form class="audit-run-form__form" @submit.prevent="submit">
       <AppField label="Municipality">
         <AppInput
           v-model="municipality"
           aria-label="Municipality"
           :disabled="isCreating"
-          placeholder="Prishtina"
+          placeholder="Prizren"
         />
       </AppField>
 
-      <AppField label="Route or segment name">
-        <AppInput
-          v-model="routeName"
-          aria-label="Route or segment name"
-          :disabled="isCreating"
-          placeholder="Bill Clinton Boulevard, or leave empty if using coordinates"
-        />
-      </AppField>
+      <LocationSearchField
+        v-model:latitude="selectedLatitude"
+        v-model:longitude="selectedLongitude"
+        v-model:location-label="selectedLabel"
+        label="Route or location"
+        placeholder="Search streets, landmarks, or neighborhoods in Prizren"
+        :disabled="isCreating"
+        hint=""
+      />
 
-      <div class="audit-run-form__coordinate-grid">
-        <AppField label="Latitude">
-          <AppInput
-            v-model="latitude"
-            aria-label="Audit latitude"
-            :disabled="isCreating"
-            placeholder="42.6596"
-          />
-        </AppField>
-
-        <AppField label="Longitude">
-          <AppInput
-            v-model="longitude"
-            aria-label="Audit longitude"
-            :disabled="isCreating"
-            placeholder="21.1545"
-          />
-        </AppField>
+      <div class="audit-run-form__gps-row">
+        <GpsLocateButton :disabled="isCreating" @located="onGpsLocated" />
       </div>
-
-      <p class="audit-run-form__hint">
-        Use either a route name or both coordinates. Coordinate audits scan that exact point across
-        the configured Street View headings.
-      </p>
 
       <AppField label="Notes">
         <AppTextarea
@@ -59,31 +30,33 @@
           aria-label="Audit notes"
           :disabled="isCreating"
           :maxlength="1000"
-          placeholder="Optional context for the backend and AI team."
+          placeholder="Optional context for reviewers."
         />
       </AppField>
 
-      <AppCard v-if="error" class="audit-run-form__error" variant="inset">
+      <div v-if="error" class="audit-run-form__error glass-panel">
         <AppBadge tone="danger">Create failed</AppBadge>
         <p>{{ error }}</p>
-      </AppCard>
+      </div>
 
       <AppButton :disabled="isCreating || !canSubmit" type="submit">
-        {{ isCreating ? 'Creating run...' : 'Create audit run' }}
+        {{ isCreating ? 'Creating…' : 'Start audit run' }}
       </AppButton>
     </form>
-  </AppCard>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
 import AppField from '@/components/common/AppField.vue';
 import AppInput from '@/components/common/AppInput.vue';
 import AppTextarea from '@/components/common/AppTextarea.vue';
+import GpsLocateButton from '@/components/maps/GpsLocateButton.vue';
+import LocationSearchField from '@/components/maps/LocationSearchField.vue';
 import type { AuditRunCreatePayload } from '@/types/audit';
+import { snapToStreetViewAtCoordinates } from '@/utils/streetView';
 
 const props = defineProps<{
   isCreating: boolean;
@@ -94,27 +67,45 @@ const emit = defineEmits<{
   create: [payload: AuditRunCreatePayload];
 }>();
 
-const municipality = ref('Prishtina');
-const routeName = ref('');
-const latitude = ref('');
-const longitude = ref('');
+const municipality = ref('Prizren');
+const selectedLatitude = ref<number | null>(null);
+const selectedLongitude = ref<number | null>(null);
+const selectedLabel = ref<string | null>(null);
 const notes = ref('');
 
-const parsedLatitude = computed(() => Number(latitude.value.trim()));
-const parsedLongitude = computed(() => Number(longitude.value.trim()));
-const hasRoute = computed(() => routeName.value.trim().length > 0);
 const hasCoordinates = computed(
   () =>
-    latitude.value.trim().length > 0 &&
-    longitude.value.trim().length > 0 &&
-    Number.isFinite(parsedLatitude.value) &&
-    Number.isFinite(parsedLongitude.value) &&
-    parsedLatitude.value >= -90 &&
-    parsedLatitude.value <= 90 &&
-    parsedLongitude.value >= -180 &&
-    parsedLongitude.value <= 180,
+    selectedLatitude.value !== null &&
+    selectedLongitude.value !== null &&
+    selectedLatitude.value >= -90 &&
+    selectedLatitude.value <= 90 &&
+    selectedLongitude.value >= -180 &&
+    selectedLongitude.value <= 180,
 );
-const canSubmit = computed(() => municipality.value.trim().length > 0 && (hasRoute.value || hasCoordinates.value));
+
+const hasRoute = computed(() => Boolean(selectedLabel.value?.trim()));
+const canSubmit = computed(
+  () => municipality.value.trim().length > 0 && hasRoute.value && hasCoordinates.value,
+);
+
+function onGpsLocated(payload: {
+  latitude: number;
+  longitude: number;
+  label: string;
+}) {
+  void applyLocatedSelection(payload);
+}
+
+async function applyLocatedSelection(payload: {
+  latitude: number;
+  longitude: number;
+  label: string;
+}) {
+  const snapped = await snapToStreetViewAtCoordinates(payload.latitude, payload.longitude);
+  selectedLatitude.value = snapped?.latitude ?? payload.latitude;
+  selectedLongitude.value = snapped?.longitude ?? payload.longitude;
+  selectedLabel.value = snapped?.description?.trim() || payload.label;
+}
 
 function submit() {
   if (!canSubmit.value || props.isCreating) {
@@ -123,22 +114,17 @@ function submit() {
 
   emit('create', {
     municipality: municipality.value.trim(),
-    route_name: hasRoute.value ? routeName.value.trim() : null,
-    latitude: hasCoordinates.value ? parsedLatitude.value : null,
-    longitude: hasCoordinates.value ? parsedLongitude.value : null,
+    route_name: selectedLabel.value?.trim() ?? null,
+    latitude: selectedLatitude.value,
+    longitude: selectedLongitude.value,
     notes: notes.value.trim() ? notes.value.trim() : null,
   });
 }
 </script>
 
 <style scoped>
-.audit-run-form h2,
-.audit-run-form p {
+.audit-run-form h2 {
   margin: 0;
-}
-
-.audit-run-form p {
-  color: var(--text-secondary);
 }
 
 .audit-run-form__form {
@@ -146,25 +132,19 @@ function submit() {
   gap: var(--space-4);
 }
 
-.audit-run-form__coordinate-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.audit-run-form__hint {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
+.audit-run-form__gps-row {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-1) 0 var(--space-2);
 }
 
 .audit-run-form__error {
   display: grid;
   gap: var(--space-2);
+  padding: var(--space-4);
 }
 
-@media (max-width: 620px) {
-  .audit-run-form__coordinate-grid {
-    grid-template-columns: 1fr;
-  }
+.audit-run-form__error p {
+  color: var(--text-secondary);
 }
 </style>

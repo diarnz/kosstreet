@@ -6,7 +6,6 @@
         <h2>{{ title }}</h2>
         <p>{{ subtitle }}</p>
       </div>
-      <AppBadge tone="source-ai-audit">Google Street View</AppBadge>
     </div>
 
     <StreetViewFallbackPanel
@@ -32,11 +31,10 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
-import AppBadge from '@/components/common/AppBadge.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import StreetViewFallbackPanel from '@/components/streetview/StreetViewFallbackPanel.vue';
 import StreetViewRecordSummary from '@/components/streetview/StreetViewRecordSummary.vue';
-import type { StreetViewTarget } from '@/types/streetView';
+import type { StreetViewTarget, StreetViewCurrentView } from '@/types/streetView';
 import { loadGoogleMaps } from '@/utils/googleMaps';
 import { formatCoordinates } from '@/utils/reportFormatting';
 import {
@@ -54,39 +52,47 @@ const props = withDefaults(
     title?: string;
     recordCount?: number;
     compact?: boolean;
+    trackViewChanges?: boolean;
   }>(),
   {
     isLoading: false,
-    eyebrow: 'Street-level evidence',
-    title: 'Google Street View context',
+    eyebrow: 'Street context',
+    title: 'Location preview',
     recordCount: 0,
     compact: false,
+    trackViewChanges: false,
   },
 );
+
+const emit = defineEmits<{
+  'view-changed': [view: StreetViewCurrentView];
+}>();
 
 const panoramaElement = ref<HTMLElement | null>(null);
 const panorama = shallowRef<google.maps.StreetViewPanorama | null>(null);
 const streetViewService = shallowRef<google.maps.StreetViewService | null>(null);
 const fallbackReason = ref<string | null>(null);
 const statusMessage = ref<string | null>(null);
+const currentView = ref<StreetViewCurrentView | null>(null);
 let lookupToken = 0;
+let viewListenerCleanup: (() => void) | null = null;
 
 const subtitle = computed(() => {
   if (props.target) {
-    return `Showing the nearest panorama for ${props.target.label}.`;
+    return props.target.label;
   }
 
   if (props.recordCount > 0) {
-    return `${props.recordCount} record${props.recordCount === 1 ? '' : 's'} available. Select one to load Street View.`;
+    return `Select a record to preview (${props.recordCount} available).`;
   }
 
-  return 'Street View appears when a report or AI suggestion with valid coordinates is selected.';
+  return 'Preview loads when a geolocated record is selected.';
 });
 
 const ariaLabel = computed(() =>
   props.target
-    ? `Google Street View panorama near ${props.target.label}`
-    : 'Google Street View panorama panel',
+    ? `Street preview near ${props.target.label}`
+    : 'Street preview panel',
 );
 
 const targetLabel = computed(() => props.target?.label ?? null);
@@ -104,10 +110,10 @@ const fallbackTitle = computed(() => {
 
 const fallbackDescription = computed(() => {
   if (props.target?.source === 'audit_suggestion') {
-    return 'The AI suggestion remains reviewable even when nearby Google Street View imagery is unavailable.';
+    return 'The suggestion remains reviewable without a street preview.';
   }
 
-  return 'The report queue and detail panel remain available even when nearby Google Street View imagery is unavailable.';
+  return 'Report details remain available without a street preview.';
 });
 
 watch(
@@ -120,8 +126,51 @@ watch(
 
 onBeforeUnmount(() => {
   lookupToken += 1;
+  detachViewListeners();
   panorama.value = null;
   streetViewService.value = null;
+  currentView.value = null;
+});
+
+function detachViewListeners() {
+  viewListenerCleanup?.();
+  viewListenerCleanup = null;
+}
+
+function syncCurrentView(pano: google.maps.StreetViewPanorama) {
+  const position = pano.getPosition();
+  const pov = pano.getPov();
+  if (!position || !pov) {
+    return;
+  }
+
+  const view: StreetViewCurrentView = {
+    latitude: position.lat(),
+    longitude: position.lng(),
+    heading: Math.round(pov.heading ?? 0),
+    pitch: Math.round(pov.pitch ?? 0),
+  };
+  currentView.value = view;
+  emit('view-changed', view);
+}
+
+function attachViewListeners(pano: google.maps.StreetViewPanorama) {
+  detachViewListeners();
+  if (!props.trackViewChanges) {
+    return;
+  }
+
+  const positionListener = pano.addListener('position_changed', () => syncCurrentView(pano));
+  const povListener = pano.addListener('pov_changed', () => syncCurrentView(pano));
+  viewListenerCleanup = () => {
+    positionListener.remove();
+    povListener.remove();
+  };
+  syncCurrentView(pano);
+}
+
+defineExpose({
+  getCurrentView: () => currentView.value,
 });
 
 async function ensureGoogleMaps() {
@@ -172,7 +221,7 @@ async function loadTarget() {
       return;
     }
 
-    statusMessage.value = 'Searching for nearby Google Street View imagery...';
+    statusMessage.value = 'Loading street preview…';
     const result = await findPanorama(
       maps,
       props.target,
@@ -195,7 +244,7 @@ async function loadTarget() {
     if (!panoramaResult) {
       panorama.value = null;
       fallbackReason.value =
-        `Google did not return a Street View panorama within ${STREET_VIEW_FALLBACK_RADIUS_METERS} meters of this selected record.`;
+        `No street preview found within ${STREET_VIEW_FALLBACK_RADIUS_METERS}m of this location.`;
       statusMessage.value = null;
       return;
     }
@@ -206,14 +255,14 @@ async function loadTarget() {
       panorama.value.setPov(pov);
     }
     panorama.value.setVisible(true);
-    statusMessage.value =
-      panoramaResult.location?.description ?? 'Nearest Google Street View panorama loaded.';
+    attachViewListeners(panorama.value);
+    statusMessage.value = panoramaResult.location?.description ?? 'Street preview loaded.';
   } catch (error) {
     if (token !== lookupToken) {
       return;
     }
     fallbackReason.value =
-      error instanceof Error ? error.message : 'Google Street View could not initialize.';
+      error instanceof Error ? error.message : 'Street preview could not load.';
     panorama.value = null;
     statusMessage.value = null;
   }

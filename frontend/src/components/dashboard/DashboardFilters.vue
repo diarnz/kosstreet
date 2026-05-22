@@ -1,54 +1,42 @@
 <template>
-  <AppCard class="dashboard-filters" variant="inset">
-    <AppField label="Search reports">
+  <div class="filter-bar glass-panel">
+    <p class="command-label filter-bar__label">Filters</p>
+    <div class="filter-bar__controls">
       <AppInput
+        class="filter-bar__search"
         :model-value="filters.search"
         aria-label="Search reports"
-        placeholder="Search ID, category, source, coordinates..."
+        placeholder="Search…"
         @update:model-value="$emit('update:search', $event)"
       />
-    </AppField>
 
-    <label class="dashboard-filters__field">
-      <span>Status</span>
-      <select :value="filters.status" @change="onStatusChange">
+      <select :value="filters.status" aria-label="Filter by status" @change="onStatusChange">
         <option value="all">All statuses</option>
         <option v-for="status in statuses" :key="status.value" :value="status.value">
           {{ status.label }}
         </option>
       </select>
-    </label>
 
-    <label class="dashboard-filters__field">
-      <span>Category</span>
-      <select
-        :value="filters.category"
-        @change="onCategoryChange"
-      >
+      <select :value="filters.category" aria-label="Filter by category" @change="onCategoryChange">
         <option value="all">All categories</option>
         <option v-for="category in categories" :key="category.value" :value="category.value">
           {{ category.label }}
         </option>
       </select>
-    </label>
 
-    <label class="dashboard-filters__field">
-      <span>Source</span>
-      <select :value="filters.source" @change="onSourceChange">
+      <select :value="filters.source" aria-label="Filter by source" @change="onSourceChange">
         <option value="all">All sources</option>
         <option value="citizen">Citizen</option>
-        <option value="street_audit">AI Street Audit</option>
+        <option value="street_audit">AI audit</option>
       </select>
-    </label>
 
-    <AppButton variant="secondary" @click="$emit('clear')">Clear filters</AppButton>
-  </AppCard>
+      <AppButton variant="secondary" size="sm" @click="$emit('clear')">Clear</AppButton>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
-import AppField from '@/components/common/AppField.vue';
 import AppInput from '@/components/common/AppInput.vue';
 import type { DashboardFiltersState } from '@/types/dashboard';
 import type { IssueCategory, ReportSource, TicketStatus } from '@/types/report';
@@ -94,41 +82,48 @@ function onSourceChange(event: Event) {
 </script>
 
 <style scoped>
-.dashboard-filters {
+.filter-bar {
   display: grid;
-  grid-template-columns: minmax(14rem, 1.5fr) repeat(3, minmax(10rem, 1fr)) auto;
   gap: var(--space-3);
-  align-items: end;
+  padding: var(--space-4);
 }
 
-.dashboard-filters__field {
-  display: grid;
+.filter-bar__controls {
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+  align-items: center;
 }
 
-.dashboard-filters__field span {
-  font-size: var(--text-sm);
-  font-weight: 800;
+.filter-bar__search {
+  flex: 1 1 12rem;
+  min-width: 10rem;
 }
 
 select {
-  min-height: 2.9rem;
+  min-height: 2.65rem;
+  padding: 0 0.85rem;
   border: var(--border-soft);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
   color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.92);
+  background: rgba(255, 253, 247, 0.72);
+  font-size: var(--text-sm);
+  font-weight: 750;
+  transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
 }
 
-@media (max-width: 980px) {
-  .dashboard-filters {
-    grid-template-columns: 1fr 1fr;
-  }
+select:focus-visible {
+  border-color: rgba(47, 93, 80, 0.35);
 }
 
 @media (max-width: 620px) {
-  .dashboard-filters {
-    grid-template-columns: 1fr;
+  .filter-bar__controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  select {
+    width: 100%;
   }
 }
 </style>

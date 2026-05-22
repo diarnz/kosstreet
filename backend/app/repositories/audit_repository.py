@@ -1,12 +1,12 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from geoalchemy2.functions import ST_MakePoint
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.audit import AuditFrame, AuditRun, AuditSuggestion
-from app.models.enums import AuditRunStatus, AuditSuggestionStatus
+from app.models.enums import AuditRunStatus, AuditSuggestionStatus, AuditScanSource
 from app.schemas.audit import AuditRunCreate
 
 
@@ -34,6 +34,8 @@ class AuditRunRepository:
             id=uuid.uuid4(),
             municipality=data.municipality,
             route_name=route_name,
+            scan_latitude=data.latitude,
+            scan_longitude=data.longitude,
             notes=data.notes,
             status=AuditRunStatus.queued,
             frames_total=0,
@@ -152,11 +154,7 @@ class AuditFrameRepository:
         )
         return list(result.scalars().all())
 
-    async def get_for_run(
-        self,
-        run_id: uuid.UUID,
-        frame_index: int,
-    ) -> AuditFrame | None:
+    async def get_by_index(self, run_id: uuid.UUID, frame_index: int) -> AuditFrame | None:
         result = await self.db.execute(
             select(AuditFrame).where(
                 AuditFrame.audit_run_id == run_id,
@@ -165,8 +163,32 @@ class AuditFrameRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_max_frame_index(self, run_id: uuid.UUID) -> int | None:
+        result = await self.db.execute(
+            select(func.max(AuditFrame.frame_index)).where(AuditFrame.audit_run_id == run_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def count_on_demand_since(self, run_id: uuid.UUID, since: datetime) -> int:
+        result = await self.db.execute(
+            select(func.count())
+            .select_from(AuditFrame)
+            .where(
+                AuditFrame.audit_run_id == run_id,
+                AuditFrame.scan_source == AuditScanSource.on_demand,
+                AuditFrame.created_at >= since,
+            )
+        )
+        return int(result.scalar_one())
+
+    async def update(self, frame: AuditFrame, data: dict) -> AuditFrame:
+        for key, value in data.items():
+            setattr(frame, key, value)
+        await self.db.flush()
+        return frame
+
     async def create(self, data: dict) -> AuditFrame:
-        frame = AuditFrame(
+        obj = AuditFrame(
             id=uuid.uuid4(),
             audit_run_id=data["audit_run_id"],
             frame_index=data["frame_index"],
@@ -174,29 +196,18 @@ class AuditFrameRepository:
             longitude=data["longitude"],
             heading=data["heading"],
             pitch=data.get("pitch", 0),
-            image_url=data["image_url"],
             is_civic_issue=data.get("is_civic_issue", False),
             category=data.get("category"),
             confidence=data.get("confidence"),
             severity=data.get("severity"),
             description=data.get("description"),
+            image_url=data.get("image_url"),
             detection_regions=data.get("detection_regions"),
+            scan_source=data.get("scan_source", AuditScanSource.pipeline),
             model_name=data.get("model_name"),
             suggestion_id=data.get("suggestion_id"),
             created_at=data.get("created_at", datetime.now(timezone.utc)),
         )
-        self.db.add(frame)
+        self.db.add(obj)
         await self.db.flush()
-        return frame
-
-    async def set_suggestion_id(
-        self,
-        frame_id: uuid.UUID,
-        suggestion_id: uuid.UUID,
-    ) -> None:
-        result = await self.db.execute(select(AuditFrame).where(AuditFrame.id == frame_id))
-        frame = result.scalar_one_or_none()
-        if frame is None:
-            return
-        frame.suggestion_id = suggestion_id
-        await self.db.flush()
+        return obj

@@ -1,6 +1,7 @@
 import { ApiError, type ApiRequestOptions } from '@/types/api';
+import { resolveApiBaseUrl } from '@/utils/apiBaseUrl';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000';
+const API_BASE_URL = resolveApiBaseUrl();
 
 async function parseResponseBody(response: Response): Promise<unknown> {
   const contentType = response.headers.get('content-type');

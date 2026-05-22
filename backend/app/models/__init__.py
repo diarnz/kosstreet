@@ -16,6 +16,7 @@ __all__ = [
     "AuditFrame",
     "AuditRun",
     "AuditSuggestion",
+    "AuditFrame",
     "IssueCategory",
     "TicketStatus",
     "ReportSource",

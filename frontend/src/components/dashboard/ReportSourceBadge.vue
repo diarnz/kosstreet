@@ -1,6 +1,6 @@
 <template>
-  <AppBadge :tone="source === 'citizen' ? 'source-citizen' : 'source-ai-audit'" size="sm">
-    {{ sourceLabels[source] }}
+  <AppBadge :tone="source === 'citizen' ? 'source-citizen' : 'source-ai-audit'" :size="compact ? 'xs' : 'sm'">
+    {{ compact ? shortLabels[source] : sourceLabels[source] }}
   </AppBadge>
 </template>
 
@@ -11,6 +11,12 @@ import { sourceLabels } from '@/utils/reportFormatting';
 
 defineProps<{
   source: ReportSource;
+  compact?: boolean;
 }>();
+
+const shortLabels: Record<ReportSource, string> = {
+  citizen: 'Citizen',
+  street_audit: 'AI',
+};
 </script>
 

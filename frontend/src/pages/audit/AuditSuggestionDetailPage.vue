@@ -1,28 +1,47 @@
 <template>
   <DashboardLayout>
-    <AppSectionHeader
-      eyebrow="AI Suggestion Detail"
-      title="AI suggestion review"
-      description="Inspect one backend-persisted model detection, review it, or convert it into a municipal report."
+    <PageHero
+      eyebrow="AI suggestion"
+      :title="suggestion ? categoryLabels[suggestion.category] : 'Suggestion review'"
+      description="Inspect evidence, review, or convert to a municipal ticket."
     />
 
-    <AppCard v-if="error" class="stack" variant="inset">
-      <AppBadge tone="danger">Backend error</AppBadge>
+    <AppCard v-if="error" class="stack animate-fade-in" variant="inset">
+      <AppBadge tone="danger">Error</AppBadge>
       <p>{{ error }}</p>
-      <AppButton variant="secondary" @click="loadSuggestion">Retry fetch</AppButton>
+      <AppButton variant="secondary" @click="loadSuggestion">Retry</AppButton>
     </AppCard>
 
-    <p v-else-if="isLoading" class="muted">Loading AI suggestion from backend...</p>
+    <AppCard v-else-if="isLoading" class="stack" variant="inset">
+      <AppLoading label="Loading suggestion" />
+    </AppCard>
 
-    <AppCard v-else-if="demoSuggestion" class="stack" variant="command">
+    <AppCard v-else-if="demoSuggestion" class="stack animate-scale-in" variant="command">
       <div class="cluster-between">
         <AppBadge tone="warning">Demo scenario</AppBadge>
-        <span class="muted">Suggestion ID: {{ suggestionId }}</span>
+        <span class="muted">{{ suggestionId }}</span>
       </div>
-      <p>
-        Pitch Mode is showing this prepared AI suggestion scenario. It is not a live model result
-        and does not include restricted imagery.
-      </p>
+
+      <AuditSeverityLegend />
+
+      <AnalyzedFrameViewer
+        layout="detail"
+        show-metadata
+        :category="demoSuggestion.category"
+        :confidence="demoSuggestion.confidence"
+        :description="demoSuggestion.description ?? undefined"
+        :frame-index="demoSuggestion.frame_index ?? undefined"
+        :frames-total="16"
+        :heading="demoSuggestion.heading ?? undefined"
+        :image-url="demoSuggestionImageUrl(demoSuggestion)"
+        :is-civic-issue="true"
+        :latitude="demoSuggestion.latitude"
+        :longitude="demoSuggestion.longitude"
+        :pitch="demoSuggestion.pitch ?? undefined"
+        :regions="demoSuggestion.detection_regions ?? []"
+        :severity="demoSuggestion.severity ?? undefined"
+      />
+
       <dl class="suggestion-detail-grid">
         <div>
           <dt>Category</dt>
@@ -33,7 +52,7 @@
           <dd>{{ formatConfidence(demoSuggestion.confidence) }}</dd>
         </div>
         <div>
-          <dt>Coordinates</dt>
+          <dt>Location</dt>
           <dd>{{ formatCoordinates(demoSuggestion.latitude, demoSuggestion.longitude) }}</dd>
         </div>
         <div>
@@ -43,25 +62,32 @@
       </dl>
     </AppCard>
 
-    <template v-else-if="suggestion">
+    <div v-else-if="suggestion" class="suggestion-detail stack-lg animate-fade-up">
+      <AuditSeverityLegend />
+
       <AnalyzedFrameViewer
+        layout="detail"
+        show-metadata
         :category="suggestion.category"
         :confidence="suggestion.confidence"
-        :description="suggestion.description"
-        :frame-index="suggestion.frame_index"
-        :heading="suggestion.heading"
-        :image-url="suggestion.frame_image_url"
-        :pitch="suggestion.pitch"
-        :regions="suggestion.detection_regions"
-        :severity="suggestion.severity"
+        :description="suggestion.description ?? undefined"
+        :frame-index="suggestion.frame_index ?? undefined"
+        :heading="suggestion.heading ?? undefined"
+        :image-url="suggestion.frame_image_url ?? undefined"
+        :is-civic-issue="true"
+        :latitude="suggestion.latitude"
+        :longitude="suggestion.longitude"
+        :pitch="suggestion.pitch ?? undefined"
+        :regions="suggestion.detection_regions ?? []"
+        :severity="suggestion.severity ?? undefined"
       />
 
       <StreetViewPanel
         compact
-        eyebrow="Geographic context"
+        eyebrow="Explore"
+        title="Street context"
         :record-count="1"
         :target="streetViewTarget"
-        title="Interactive Street View"
       />
 
       <AuditSuggestionCard
@@ -74,12 +100,12 @@
         @convert="auditSuggestionsStore.convertSuggestionToReport"
         @review="auditSuggestionsStore.reviewSuggestion"
       />
-    </template>
+    </div>
 
     <AppEmptyState
       v-else
-      description="The backend did not return an AI suggestion for this URL."
-      title="Suggestion not found"
+      description="No suggestion matches this link."
+      title="Not found"
       tone="audit"
     />
   </DashboardLayout>
@@ -92,11 +118,13 @@ import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
 import AppEmptyState from '@/components/common/AppEmptyState.vue';
-import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
-import AuditSuggestionCard from '@/components/audit/AuditSuggestionCard.vue';
+import AppLoading from '@/components/common/AppLoading.vue';
+import PageHero from '@/components/common/PageHero.vue';
 import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
+import AuditSeverityLegend from '@/components/audit/AuditSeverityLegend.vue';
+import AuditSuggestionCard from '@/components/audit/AuditSuggestionCard.vue';
 import StreetViewPanel from '@/components/streetview/StreetViewPanel.vue';
-import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
+import { demoAuditSuggestions, demoSuggestionImageUrl } from '@/demo/demoAuditSuggestions';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { useAuditSuggestionsStore } from '@/stores/auditSuggestions';
 import { useUiStore } from '@/stores/ui';
@@ -116,7 +144,7 @@ const streetViewTarget = computed(() =>
 );
 const demoSuggestion = computed(() =>
   uiStore.demoMode
-    ? demoAuditSuggestions.find((suggestion) => suggestion.id === suggestionId.value) ?? null
+    ? demoAuditSuggestions.find((item) => item.id === suggestionId.value) ?? null
     : null,
 );
 
@@ -132,7 +160,7 @@ async function loadSuggestion() {
   try {
     suggestion.value = await auditSuggestionsStore.fetchSuggestion(suggestionId.value);
   } catch (loadError) {
-    error.value = loadError instanceof Error ? loadError.message : 'Could not load AI suggestion.';
+    error.value = loadError instanceof Error ? loadError.message : 'Could not load suggestion.';
     suggestion.value = null;
   } finally {
     isLoading.value = false;
@@ -149,15 +177,6 @@ watch(suggestionId, () => {
 </script>
 
 <style scoped>
-p {
-  color: var(--text-secondary);
-}
-
-code {
-  color: var(--source-ai-audit-text);
-  font-weight: 800;
-}
-
 .suggestion-detail-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -169,6 +188,10 @@ code {
   display: grid;
   gap: var(--space-1);
   min-width: 0;
+  padding: var(--space-3);
+  border: var(--border-soft);
+  border-radius: var(--radius-md);
+  background: rgba(255, 253, 247, 0.58);
 }
 
 dt {

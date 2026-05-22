@@ -5,11 +5,11 @@ export const demoScenario: DemoDatasetMeta & {
   durationTarget: string;
   disclaimer: string;
 } = {
-  id: 'prishtina-civic-corridor-demo',
+  id: 'prizren-civic-corridor-demo',
   label: 'Pitch Mode',
   description: 'Prepared frontend records for a reliable KoStreet judging walkthrough.',
-  municipality: 'Prishtina',
-  routeName: 'Prishtina civic corridor demo',
+  municipality: 'Prizren',
+  routeName: 'Prizren old town corridor demo',
   enabledLabel: 'Pitch Mode',
   durationTarget: '3 minutes',
   disclaimer: 'Demo records are frontend fixtures for judging reliability.',

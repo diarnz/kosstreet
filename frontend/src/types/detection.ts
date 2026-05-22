@@ -15,7 +15,6 @@ export interface DetectionRegion {
   radius: number;
 }
 
-/** @deprecated Use DetectionRegion circles returned by the backend instead. */
 export interface BoundingBox {
   x: number;
   y: number;
@@ -35,17 +34,18 @@ export interface AuditSuggestion {
   description?: string | null;
   model_name?: string | null;
   explanation?: string | null;
-  image_url?: string | null;
   image_attribution?: string | null;
   department?: string | null;
   heading?: number | null;
   pitch?: number | null;
   frame_index?: number | null;
-  detection_regions?: DetectionRegion[] | null;
+  detection_regions?: DetectionRegion[];
   frame_image_url?: string | null;
   reviewer_note?: string | null;
   converted_report_id?: string | null;
-  /** @deprecated Use detection_regions instead. */
+  /** @deprecated Demo-only legacy field; prefer detection_regions */
+  image_url?: string | null;
+  /** @deprecated Demo-only legacy field; prefer detection_regions */
   bounding_box?: BoundingBox | null;
   created_at: string;
 }

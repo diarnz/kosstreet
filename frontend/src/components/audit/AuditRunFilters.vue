@@ -1,32 +1,26 @@
 <template>
-  <AppCard class="audit-run-filters" variant="inset">
-    <AppField label="Search audit runs">
-      <AppInput
-        :model-value="filters.search"
-        aria-label="Search audit runs"
-        placeholder="Search route, municipality, status, ID..."
-        @update:model-value="$emit('update:search', $event)"
-      />
-    </AppField>
+  <div class="audit-run-filters">
+    <AppInput
+      class="audit-run-filters__search"
+      :model-value="filters.search"
+      aria-label="Search audit runs"
+      placeholder="Search route, municipality…"
+      @update:model-value="$emit('update:search', $event)"
+    />
 
-    <label class="audit-run-filters__field">
-      <span>Status</span>
-      <select :value="filters.status" @change="onStatusChange">
-        <option value="all">All statuses</option>
-        <option v-for="status in statuses" :key="status.value" :value="status.value">
-          {{ status.label }}
-        </option>
-      </select>
-    </label>
+    <select :value="filters.status" aria-label="Filter by status" @change="onStatusChange">
+      <option value="all">All statuses</option>
+      <option v-for="status in statuses" :key="status.value" :value="status.value">
+        {{ status.label }}
+      </option>
+    </select>
 
-    <AppButton variant="secondary" @click="$emit('clear')">Clear filters</AppButton>
-  </AppCard>
+    <AppButton variant="secondary" size="sm" @click="$emit('clear')">Clear</AppButton>
+  </div>
 </template>
 
 <script setup lang="ts">
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
-import AppField from '@/components/common/AppField.vue';
 import AppInput from '@/components/common/AppInput.vue';
 import type { AuditRunFiltersState, AuditRunStatus } from '@/types/audit';
 import { auditRunStatusLabels } from '@/utils/auditFormatting';
@@ -53,34 +47,36 @@ function onStatusChange(event: Event) {
 
 <style scoped>
 .audit-run-filters {
-  display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(10rem, 0.45fr) auto;
-  gap: var(--space-3);
-  align-items: end;
-}
-
-.audit-run-filters__field {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+  align-items: center;
 }
 
-.audit-run-filters__field span {
-  font-size: var(--text-sm);
-  font-weight: 800;
+.audit-run-filters__search {
+  flex: 1 1 10rem;
+  min-width: 8rem;
 }
 
 select {
-  min-height: 2.9rem;
+  min-height: 2.65rem;
+  padding: 0 0.85rem;
   border: var(--border-soft);
-  border-radius: var(--radius-sm);
-  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
   color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.92);
+  background: rgba(255, 253, 247, 0.72);
+  font-size: var(--text-sm);
+  font-weight: 750;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 620px) {
   .audit-run-filters {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  select {
+    width: 100%;
   }
 }
 </style>

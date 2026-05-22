@@ -2,16 +2,15 @@
   <AppCard class="demo-suggestion-panel stack" variant="command">
     <div class="cluster-between">
       <div>
-        <p class="eyebrow">Pitch Mode</p>
         <h2>Demo AI suggestion scenarios</h2>
       </div>
       <AppBadge tone="source-ai-audit">Review-only fixtures</AppBadge>
     </div>
 
     <p>
-      These are prepared frontend scenarios for the hackathon walkthrough. Real suggestions will
-      come from <code>GET /api/v1/audit-runs/:id/suggestions</code> after backend and AI endpoints
-      are connected.
+      These are prepared frontend scenarios for the hackathon walkthrough. The review workspace above
+      uses the same fixtures in the Street View scanner when Pitch Mode is active. Live suggestions
+      come from <code>GET /api/v1/audit-runs/:id/suggestions</code> after the backend is connected.
     </p>
 
     <div class="demo-suggestion-panel__grid">

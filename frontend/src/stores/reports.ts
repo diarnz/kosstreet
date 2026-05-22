@@ -211,7 +211,7 @@ export const useReportsStore = defineStore('reports', {
         this.detailErrorById[reportId] =
           error instanceof Error
             ? error.message
-            : 'Report detail endpoint is not connected yet. Backend detail data is required.';
+            : 'Could not load report details. Try again.';
         return null;
       } finally {
         this.detailLoadingById[reportId] = false;
@@ -240,7 +240,7 @@ export const useReportsStore = defineStore('reports', {
         this.statusUpdateError =
           error instanceof Error
             ? error.message
-            : 'Status update endpoint is not connected yet. Backend workflow support is required.';
+            : 'Could not update status. Try again.';
         return null;
       } finally {
         this.isUpdatingStatus = false;

@@ -1,11 +1,13 @@
 <template>
-  <AppCard class="category-selector stack" variant="inset">
+  <AppCard class="category-selector stack-lg animate-scale-in" variant="default">
     <div class="cluster-between">
       <div>
-        <h2>Issue category</h2>
-        <p>Select the category that best describes the issue.</p>
+        <p class="eyebrow">Step 3</p>
+        <h2>What type of issue is it?</h2>
       </div>
-      <AppBadge tone="warning">Required</AppBadge>
+      <AppBadge :tone="modelValue ? 'success' : 'warning'">
+        {{ modelValue ? 'Selected' : 'Required' }}
+      </AppBadge>
     </div>
 
     <div class="category-selector__grid" role="radiogroup" aria-label="Issue category">
@@ -21,15 +23,12 @@
         @click="$emit('update:modelValue', option.value)"
         @keydown="onOptionKeydown($event, option.value)"
       >
-        <IssueCategoryBadge :category="option.value" />
-        <span>{{ option.description }}</span>
+        <span class="category-selector__icon-wrap">
+          <CategoryIcon :category="option.value" />
+        </span>
+        <strong>{{ option.label }}</strong>
       </button>
     </div>
-
-    <AppCard variant="muted" class="ai-note">
-      <AppBadge tone="source-ai-audit">AI analysis</AppBadge>
-      <p>AI image analysis is not connected yet. Choose the category manually for this report.</p>
-    </AppCard>
   </AppCard>
 </template>
 
@@ -37,8 +36,9 @@
 import { ref } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppCard from '@/components/common/AppCard.vue';
-import IssueCategoryBadge from './IssueCategoryBadge.vue';
+import CategoryIcon from './CategoryIcon.vue';
 import type { IssueCategory } from '@/types/report';
+import { categoryLabels } from '@/utils/reportFormatting';
 
 defineProps<{
   modelValue: IssueCategory | null;
@@ -50,13 +50,13 @@ const emit = defineEmits<{
 
 const optionButtons = ref<HTMLButtonElement[]>([]);
 
-const options: Array<{ value: IssueCategory; description: string }> = [
-  { value: 'pothole', description: 'Road surface damage or asphalt break.' },
-  { value: 'garbage', description: 'Illegal dumping or waste on the street.' },
-  { value: 'broken_streetlight', description: 'Damaged or non-working streetlight.' },
-  { value: 'blocked_sidewalk', description: 'Blocked pedestrian path or sidewalk.' },
-  { value: 'damaged_sign', description: 'Damaged traffic or public sign.' },
-  { value: 'other', description: 'Another visible civic issue.' },
+const options: Array<{ value: IssueCategory; label: string }> = [
+  { value: 'pothole', label: categoryLabels.pothole },
+  { value: 'garbage', label: categoryLabels.garbage },
+  { value: 'broken_streetlight', label: categoryLabels.broken_streetlight },
+  { value: 'blocked_sidewalk', label: categoryLabels.blocked_sidewalk },
+  { value: 'damaged_sign', label: categoryLabels.damaged_sign },
+  { value: 'other', label: categoryLabels.other },
 ];
 
 function selectByOffset(currentValue: IssueCategory, offset: number) {
@@ -78,64 +78,74 @@ function onOptionKeydown(event: KeyboardEvent, value: IssueCategory) {
     event.preventDefault();
     selectByOffset(value, -1);
   }
-
-  if (event.key === 'Home') {
-    event.preventDefault();
-    emit('update:modelValue', options[0].value);
-    optionButtons.value[0]?.focus();
-  }
-
-  if (event.key === 'End') {
-    event.preventDefault();
-    const lastIndex = options.length - 1;
-    emit('update:modelValue', options[lastIndex].value);
-    optionButtons.value[lastIndex]?.focus();
-  }
 }
 </script>
 
 <style scoped>
 .category-selector h2 {
-  margin: 0 0 var(--space-2);
-}
-
-.category-selector p {
-  color: var(--text-secondary);
+  margin: 0;
 }
 
 .category-selector__grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
 .category-selector__option {
   display: grid;
   gap: var(--space-3);
-  min-height: 8rem;
+  justify-items: center;
+  min-height: 6.5rem;
   padding: var(--space-4);
   border: var(--border-soft);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   color: var(--text-secondary);
-  background: rgba(255, 253, 247, 0.62);
-  text-align: left;
+  background: rgba(255, 253, 247, 0.72);
+  text-align: center;
+  transition:
+    transform var(--motion-fast) var(--ease-spring),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease,
+    background var(--motion-fast) ease;
 }
 
-.category-selector__option--selected {
-  border-color: rgba(47, 93, 80, 0.42);
-  background: rgba(221, 232, 213, 0.62);
+.category-selector__option:hover {
+  transform: translateY(-2px);
   box-shadow: var(--shadow-card);
 }
 
-.ai-note {
-  display: grid;
-  gap: var(--space-3);
+.category-selector__option--selected {
+  color: var(--text-primary);
+  background: rgba(221, 232, 213, 0.62);
+  border-color: rgba(47, 93, 80, 0.42);
+  box-shadow: var(--shadow-command);
+  transform: translateY(-2px) scale(1.02);
 }
 
-@media (max-width: 620px) {
+.category-selector__icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  color: var(--color-municipal-green);
+  background: rgba(221, 232, 213, 0.55);
+}
+
+.category-selector__option strong {
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 760px) {
+  .category-selector__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
   .category-selector__grid {
     grid-template-columns: 1fr;
   }
 }
 </style>
-

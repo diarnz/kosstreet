@@ -1,119 +1,90 @@
 <template>
-  <AppCard class="analyzed-frame-viewer stack" variant="command">
-    <div class="cluster-between">
-      <div>
-        <p class="eyebrow">{{ eyebrow }}</p>
-        <h2>{{ title }}</h2>
-        <p class="analyzed-frame-viewer__subtitle">{{ subtitle }}</p>
-      </div>
-      <div class="cluster">
-        <AppBadge v-if="severity" :tone="severityBadgeTone">
-          {{ severityLabel }}
-        </AppBadge>
-        <AppBadge v-if="hasRegions" tone="source-ai-audit">AI-estimated location</AppBadge>
-        <AppBadge v-else-if="showMissingRegionBadge" tone="warning">Location not pinpointed</AppBadge>
-      </div>
-    </div>
-
-    <AppCard v-if="imageError" class="analyzed-frame-viewer__fallback stack" variant="inset">
-      <AppBadge tone="danger">Image unavailable</AppBadge>
-      <p>{{ imageError }}</p>
-    </AppCard>
-
-    <div
-      v-else-if="resolvedImageUrl"
-      class="analyzed-frame-viewer__stage"
-      @mouseleave="clearActiveRegion"
-    >
-      <img
-        :alt="imageAlt"
-        class="analyzed-frame-viewer__image"
-        :src="resolvedImageUrl"
-        @error="handleImageError"
-        @load="handleImageLoad"
-      />
-
-      <SeverityRegionOverlay
-        v-if="hasRegions && imageLoaded"
-        :active-index="activeRegionIndex"
-        :ariaLabel="regionAriaLabel"
-        :regions="regions"
-        :severity="severity"
-        :variant="overlayVariant"
-        @clear-active="clearActiveRegion"
-        @set-active="setActiveRegion"
-      />
-
+  <section
+    class="analyzed-frame-viewer"
+    :class="`analyzed-frame-viewer--${layout}`"
+    :aria-label="ariaLabel"
+  >
+    <div class="analyzed-frame-viewer__layout">
       <div
-        v-if="activeTooltip && activeRegionIndex !== null"
-        class="analyzed-frame-viewer__tooltip"
-        role="tooltip"
-        :style="activeTooltipStyle"
+        class="analyzed-frame-viewer__media"
       >
-        <strong>{{ activeTooltip.title }}</strong>
-        <p>{{ activeTooltip.body }}</p>
+        <img
+          v-if="resolvedImageUrl"
+          :src="resolvedImageUrl"
+          :alt="alt"
+          class="analyzed-frame-viewer__image"
+          loading="lazy"
+        />
+        <div v-else class="analyzed-frame-viewer__placeholder muted">No frame image</div>
+
+        <DetectionCircleOverlay
+          v-if="resolvedImageUrl && displayRegions.length"
+          overlay-id="viewer"
+          :category="category ?? undefined"
+          :confidence="confidence ?? undefined"
+          :description="description ?? undefined"
+          :interactive="layout === 'detail' || layout === 'scanner'"
+          :regions="displayRegions"
+          :severity="severity ?? undefined"
+        />
       </div>
 
-      <div v-if="!imageLoaded" class="analyzed-frame-viewer__loading" role="status">
-        Loading analyzed frame...
+      <div class="analyzed-frame-viewer__summary">
+        <div class="analyzed-frame-viewer__title-row">
+          <p class="analyzed-frame-viewer__title">
+            {{ frameLabel ?? 'Analyzed frame' }}
+          </p>
+          <span
+            v-if="severity"
+            class="analyzed-frame-viewer__severity"
+            :class="`analyzed-frame-viewer__severity--${severity}`"
+          >
+            {{ severityLabel }}
+          </span>
+        </div>
+
+        <p v-if="category || confidence != null" class="analyzed-frame-viewer__facts">
+          <span v-if="category">{{ categoryLabel }}</span>
+          <span v-if="category && confidence != null"> · </span>
+          <span v-if="confidence != null">{{ confidenceLabel }}</span>
+        </p>
+
+        <p v-if="description" class="analyzed-frame-viewer__description">
+          {{ description }}
+        </p>
+
+        <p class="analyzed-frame-viewer__hint muted">
+          <AppBadge v-if="showMissingRegionsBadge" tone="warning">Location not pinpointed</AppBadge>
+          <template v-else>
+            {{ hasRegions ? 'Tap the highlight for AI finding details.' : 'No pinpoint overlay for this frame.' }}
+          </template>
+        </p>
+        <p v-if="hasRegions || showMissingRegionsBadge" class="analyzed-frame-viewer__disclaimer muted">
+          AI-estimated location
+        </p>
+
+        <dl v-if="showMetadata && metaItems.length" class="analyzed-frame-viewer__meta">
+          <div v-for="item in metaItems" :key="item.label">
+            <dt>{{ item.label }}</dt>
+            <dd>{{ item.value }}</dd>
+          </div>
+        </dl>
       </div>
     </div>
-
-    <AppCard v-else class="analyzed-frame-viewer__fallback stack" variant="muted">
-      <AppBadge tone="warning">No analyzed frame</AppBadge>
-      <p>
-        This suggestion does not include a proxied Street View frame yet. Run a new audit to
-        capture analyzed frame evidence.
-      </p>
-    </AppCard>
-
-    <SeverityLegend v-if="hasRegions" :variant="overlayVariant" />
-
-    <dl class="analyzed-frame-viewer__meta">
-      <div v-if="frameIndex !== null && frameIndex !== undefined">
-        <dt>Frame</dt>
-        <dd>#{{ frameIndex + 1 }}</dd>
-      </div>
-      <div v-if="heading !== null && heading !== undefined">
-        <dt>Heading</dt>
-        <dd>{{ heading }}°</dd>
-      </div>
-      <div v-if="pitch !== null && pitch !== undefined">
-        <dt>Pitch</dt>
-        <dd>{{ pitch }}°</dd>
-      </div>
-      <div>
-        <dt>Confidence</dt>
-        <dd>{{ formatConfidence(confidence) }}</dd>
-      </div>
-      <div v-if="categoryLabel">
-        <dt>Category</dt>
-        <dd>{{ categoryLabel }}</dd>
-      </div>
-    </dl>
-
-    <p v-if="description" class="analyzed-frame-viewer__description">{{ description }}</p>
-  </AppCard>
+  </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import AppBadge from '@/components/common/AppBadge.vue';
-import AppCard from '@/components/common/AppCard.vue';
-import SeverityLegend from '@/components/audit/SeverityLegend.vue';
-import SeverityRegionOverlay from '@/components/audit/SeverityRegionOverlay.vue';
+import { computed } from 'vue';
 import type { AuditSuggestionSeverity, DetectionRegion } from '@/types/detection';
 import type { IssueCategory } from '@/types/report';
+import { resolveApiAssetUrl } from '@/utils/apiAssets';
+import AppBadge from '@/components/common/AppBadge.vue';
+import DetectionCircleOverlay from '@/components/audit/DetectionCircleOverlay.vue';
 import {
-  buildRegionTooltipContent,
-  DEFAULT_REGION_OVERLAY_VARIANT,
-  formatSeverityLabel,
-  getSeverityBadgeTone,
-  regionOverlayPosition,
-  resolveApiAssetUrl,
-  type RegionOverlayVariant,
+  SEVERITY_LABELS,
 } from '@/utils/detectionRegions';
-import { categoryLabels, formatConfidence } from '@/utils/reportFormatting';
+import { categoryLabels, formatConfidence, formatCoordinates } from '@/utils/reportFormatting';
 
 const props = withDefaults(
   defineProps<{
@@ -122,201 +93,236 @@ const props = withDefaults(
     severity?: AuditSuggestionSeverity | null;
     category?: IssueCategory | null;
     description?: string | null;
-    confidence?: number;
+    confidence?: number | null;
     frameIndex?: number | null;
+    framesTotal?: number | null;
     heading?: number | null;
     pitch?: number | null;
-    eyebrow?: string;
-    title?: string;
-    subtitle?: string;
-    showMissingRegionBadge?: boolean;
-    overlayVariant?: RegionOverlayVariant;
+    latitude?: number;
+    longitude?: number;
+    alt?: string;
+    showMetadata?: boolean;
+    layout?: 'compact' | 'detail' | 'scanner';
+    isCivicIssue?: boolean;
+    ariaLabel?: string;
   }>(),
   {
     imageUrl: null,
-    regions: null,
+    regions: () => [],
     severity: null,
     category: null,
     description: null,
-    confidence: 0,
+    confidence: null,
     frameIndex: null,
+    framesTotal: null,
     heading: null,
     pitch: null,
-    eyebrow: 'Analyzed frame evidence',
-    title: 'What the AI analyzed',
-    subtitle: 'Exact Street View frame sent to the vision model, with severity overlay when available.',
-    showMissingRegionBadge: true,
-    overlayVariant: DEFAULT_REGION_OVERLAY_VARIANT,
+    showMetadata: false,
+    layout: 'compact',
+    alt: 'AI street audit analyzed frame',
+    ariaLabel: 'Analyzed street audit frame with severity overlay',
   },
 );
 
-const imageLoaded = ref(false);
-const imageError = ref<string | null>(null);
-const activeRegionIndex = ref<number | null>(null);
-
-const resolvedImageUrl = computed(() => resolveApiAssetUrl(props.imageUrl));
-const regions = computed(() => props.regions ?? []);
-const hasRegions = computed(() => regions.value.length > 0);
-const severityBadgeTone = computed(() => getSeverityBadgeTone(props.severity));
-const severityLabel = computed(() => formatSeverityLabel(props.severity));
-const categoryLabel = computed(() =>
-  props.category ? categoryLabels[props.category] : null,
+const resolvedImageUrl = computed(() =>
+  props.imageUrl ? resolveApiAssetUrl(props.imageUrl) : null,
 );
-const imageAlt = computed(() => {
-  const category = categoryLabel.value ?? 'street issue';
-  return `Analyzed Street View frame showing ${category}`;
-});
-const regionAriaLabel = computed(() => {
-  const tooltip = buildRegionTooltipContent({
-    category: categoryLabel.value,
-    confidence: props.confidence,
-    description: props.description,
-    severity: props.severity,
-  });
-  return `${tooltip.title}. ${tooltip.body}`;
-});
-const activeTooltip = computed(() => {
-  if (activeRegionIndex.value === null) {
+
+const displayRegions = computed(() => props.regions ?? []);
+const hasRegions = computed(() => displayRegions.value.length > 0);
+const showMissingRegionsBadge = computed(
+  () => Boolean(props.isCivicIssue) && !hasRegions.value,
+);
+const severityLabel = computed(() =>
+  props.severity ? SEVERITY_LABELS[props.severity] : '',
+);
+const categoryLabel = computed(() =>
+  props.category ? categoryLabels[props.category] : 'Detected issue',
+);
+const confidenceLabel = computed(() =>
+  props.confidence == null ? 'Confidence unavailable' : formatConfidence(props.confidence),
+);
+const frameLabel = computed(() => {
+  if (props.frameIndex == null) {
     return null;
   }
-
-  return buildRegionTooltipContent({
-    category: categoryLabel.value,
-    confidence: props.confidence,
-    description: props.description,
-    severity: props.severity,
-  });
-});
-const activeTooltipStyle = computed(() => {
-  if (activeRegionIndex.value === null) {
-    return undefined;
+  if (props.framesTotal != null) {
+    return `Frame ${props.frameIndex + 1} of ${props.framesTotal}`;
   }
-
-  const region = regions.value[activeRegionIndex.value];
-  if (!region) {
-    return undefined;
-  }
-
-  const position = regionOverlayPosition(region);
-  return {
-    left: `${position.centerXPercent}%`,
-    top: `${position.centerYPercent}%`,
-  };
+  return `Frame ${props.frameIndex + 1}`;
 });
 
-watch(
-  () => props.imageUrl,
-  () => {
-    imageLoaded.value = false;
-    imageError.value = null;
-    activeRegionIndex.value = null;
-  },
-);
+const metaItems = computed(() => {
+  const items: Array<{ label: string; value: string }> = [];
 
-function setActiveRegion(index: number) {
-  activeRegionIndex.value = index;
-}
+  if (props.heading != null) {
+    items.push({ label: 'Heading', value: `${props.heading}°` });
+  }
+  if (props.pitch != null) {
+    items.push({ label: 'Pitch', value: `${props.pitch}°` });
+  }
+  if (props.latitude != null && props.longitude != null) {
+    items.push({
+      label: 'Location',
+      value: formatCoordinates(props.latitude, props.longitude),
+    });
+  }
 
-function clearActiveRegion() {
-  activeRegionIndex.value = null;
-}
-
-function handleImageLoad() {
-  imageLoaded.value = true;
-  imageError.value = null;
-}
-
-function handleImageError() {
-  imageLoaded.value = false;
-  imageError.value = 'Could not load the proxied Street View frame from the backend.';
-}
+  return items;
+});
 </script>
 
 <style scoped>
-.analyzed-frame-viewer__subtitle,
-.analyzed-frame-viewer__description {
-  color: var(--text-secondary);
+.analyzed-frame-viewer__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 11.5rem) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.analyzed-frame-viewer__stage {
+.analyzed-frame-viewer--detail .analyzed-frame-viewer__layout {
+  grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+}
+
+.analyzed-frame-viewer__media {
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  aspect-ratio: 1 / 1;
-  background:
-    linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.08)),
-    var(--surface-muted);
+  width: 100%;
+  max-width: 16rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-map-placeholder);
+  aspect-ratio: 4 / 3;
 }
 
-.analyzed-frame-viewer__image {
-  position: absolute;
-  inset: 0;
+.analyzed-frame-viewer--detail .analyzed-frame-viewer__media {
+  max-width: 18rem;
+}
+
+.analyzed-frame-viewer__image,
+.analyzed-frame-viewer__placeholder {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.analyzed-frame-viewer__tooltip {
-  position: absolute;
-  z-index: 2;
-  max-width: min(18rem, 80%);
-  padding: var(--space-3);
-  border: var(--border-soft);
-  border-radius: var(--radius-sm);
-  background: rgba(15, 23, 42, 0.92);
-  color: #fff;
-  pointer-events: none;
-  transform: translate(-50%, calc(-100% - 0.75rem));
-}
-
-.analyzed-frame-viewer__tooltip strong {
-  display: block;
-  margin-bottom: var(--space-1);
-}
-
-.analyzed-frame-viewer__tooltip p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.88);
+.analyzed-frame-viewer__placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 8rem;
   font-size: var(--text-sm);
 }
 
-.analyzed-frame-viewer__loading {
-  position: absolute;
-  inset: auto 0 0;
-  padding: var(--space-3);
+.analyzed-frame-viewer__summary {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-top: var(--space-1);
+}
+
+.analyzed-frame-viewer__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.analyzed-frame-viewer__title {
+  margin: 0;
   color: var(--text-primary);
-  background: linear-gradient(180deg, transparent, rgba(15, 23, 42, 0.72));
-  font-weight: 700;
+  font-size: var(--text-sm);
+  font-weight: 850;
+}
+
+.analyzed-frame-viewer__severity {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.analyzed-frame-viewer__severity--low {
+  border: 1px solid #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.analyzed-frame-viewer__severity--medium {
+  border: 1px solid #eab308;
+  background: rgba(234, 179, 8, 0.12);
+}
+
+.analyzed-frame-viewer__severity--high,
+.analyzed-frame-viewer__severity--critical {
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.analyzed-frame-viewer__facts {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.analyzed-frame-viewer__description {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.analyzed-frame-viewer--scanner .analyzed-frame-viewer__layout {
+  grid-template-columns: 1fr;
+}
+
+.analyzed-frame-viewer--scanner .analyzed-frame-viewer__media {
+  max-width: none;
+  aspect-ratio: 4 / 3;
+}
+
+.analyzed-frame-viewer__disclaimer {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.analyzed-frame-viewer__hint {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.4;
 }
 
 .analyzed-frame-viewer__meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: var(--space-3);
-  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: var(--space-1) 0 0;
+  padding-top: var(--space-2);
+  border-top: var(--border-soft);
 }
 
 .analyzed-frame-viewer__meta > div {
   display: grid;
-  gap: var(--space-1);
+  gap: 0.1rem;
 }
 
-.analyzed-frame-viewer__meta dt {
+dt {
   color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.analyzed-frame-viewer__meta dd {
+dd {
   margin: 0;
-  color: var(--text-primary);
-  font-weight: 750;
-}
-
-.analyzed-frame-viewer__fallback p {
   color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 700;
 }
 </style>

@@ -46,6 +46,11 @@ class AuditSuggestionSeverity(StrEnum):
     critical = "critical"
 
 
+class AuditScanSource(StrEnum):
+    pipeline = "pipeline"
+    on_demand = "on_demand"
+
+
 class ActorType(StrEnum):
     municipality = "municipality"
     system = "system"

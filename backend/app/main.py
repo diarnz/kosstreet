@@ -1,14 +1,18 @@
 from contextlib import asynccontextmanager
+import logging
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.engine import AsyncSessionLocal
 from app.seeds.demo import seed_demo_data
+
+logger = logging.getLogger(__name__)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -31,13 +35,17 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    cors_kwargs: dict[str, object] = {
+        "allow_origins": settings.cors_origins,
+        "allow_credentials": True,
+        "allow_methods": ["*"],
+        "allow_headers": ["*"],
+    }
+    if settings.env == "development":
+        # Vite may fall back to 5174, 5175, etc. when the default port is taken.
+        cors_kwargs["allow_origin_regex"] = r"http://(localhost|127\.0\.0\.1):\d+"
+
+    app.add_middleware(CORSMiddleware, **cors_kwargs)
 
     app.mount(
         "/uploads",
@@ -46,6 +54,14 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+        )
 
     @app.get("/health", tags=["health"])
     def health() -> dict[str, str]:

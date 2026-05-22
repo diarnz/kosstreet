@@ -1,35 +1,17 @@
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.models.audit import AuditFrame, AuditSuggestion
 from app.models.enums import (
     AuditRunStatus,
+    AuditScanSource,
     AuditSuggestionSeverity,
     AuditSuggestionStatus,
     IssueCategory,
 )
-from app.schemas.report import DetectionRegion
-
-
-def regions_from_json(raw: Any) -> list[DetectionRegion] | None:
-    if not isinstance(raw, list) or not raw:
-        return None
-    regions: list[DetectionRegion] = []
-    for item in raw:
-        if isinstance(item, dict):
-            try:
-                regions.append(DetectionRegion.model_validate(item))
-            except ValueError:
-                continue
-    return regions or None
-
-
-def regions_to_json(regions: list[DetectionRegion] | None) -> list[dict[str, float]] | None:
-    if not regions:
-        return None
-    return [region.model_dump() for region in regions]
 
 
 class AuditRunCreate(BaseModel):
@@ -65,6 +47,8 @@ class AuditRunSummary(BaseModel):
     id: UUID
     municipality: str
     route_name: str
+    scan_latitude: float | None = None
+    scan_longitude: float | None = None
     notes: str | None
     status: AuditRunStatus
     frames_total: int
@@ -72,9 +56,13 @@ class AuditRunSummary(BaseModel):
     created_at: datetime
 
 
-class AuditSuggestionRead(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class DetectionRegionRead(BaseModel):
+    center_x: float
+    center_y: float
+    radius: float
 
+
+class AuditSuggestionRead(BaseModel):
     id: UUID
     audit_run_id: UUID
     category: IssueCategory
@@ -86,41 +74,19 @@ class AuditSuggestionRead(BaseModel):
     description: str | None
     model_name: str | None
     explanation: str | None
-    image_url: str | None = None
     image_attribution: str | None
     department: str | None
     heading: int | None
     pitch: int | None
-    frame_index: int | None = None
-    detection_regions: list[DetectionRegion] | None = None
-    frame_image_url: str | None = None
+    frame_index: int | None
+    detection_regions: list[DetectionRegionRead]
+    frame_image_url: str
     converted_report_id: UUID | None
     reviewer_note: str | None
     created_at: datetime
 
-    @field_validator("detection_regions", mode="before")
-    @classmethod
-    def parse_detection_regions(cls, value: Any) -> list[DetectionRegion] | None:
-        if value is None or isinstance(value, list) and not value:
-            return None
-        if isinstance(value, list) and value and isinstance(value[0], DetectionRegion):
-            return value
-        return regions_from_json(value)
-
-    @classmethod
-    def from_model(cls, suggestion: object) -> "AuditSuggestionRead":
-        read = cls.model_validate(suggestion)
-        frame_image_url = None
-        if getattr(suggestion, "frame_index", None) is not None:
-            frame_image_url = f"/api/v1/audit-suggestions/{read.id}/frame-image"
-        return read.model_copy(update={"image_url": None, "frame_image_url": frame_image_url})
-
 
 class AuditFrameSummary(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    audit_run_id: UUID
     frame_index: int
     latitude: float
     longitude: float
@@ -130,47 +96,126 @@ class AuditFrameSummary(BaseModel):
     category: IssueCategory | None
     confidence: float | None
     severity: AuditSuggestionSeverity | None
+    description: str | None
     suggestion_id: UUID | None
-    has_detection_regions: bool = False
-    frame_image_url: str = ""
-    created_at: datetime
-
-    @classmethod
-    def from_model(cls, frame: object) -> "AuditFrameSummary":
-        read = cls.model_validate(frame)
-        return read.model_copy(
-            update={
-                "has_detection_regions": bool(getattr(frame, "detection_regions", None)),
-                "frame_image_url": (
-                    f"/api/v1/audit-runs/{read.audit_run_id}/frames/{read.frame_index}/image"
-                ),
-            }
-        )
+    frame_image_url: str
 
 
 class AuditFrameDetail(AuditFrameSummary):
-    description: str | None
-    detection_regions: list[DetectionRegion] | None = None
-    model_name: str | None
+    detection_regions: list[DetectionRegionRead]
+    analysis_result: dict | None
+    scan_source: AuditScanSource
 
-    @field_validator("detection_regions", mode="before")
-    @classmethod
-    def parse_detection_regions(cls, value: Any) -> list[DetectionRegion] | None:
-        return regions_from_json(value)
 
-    @classmethod
-    def from_model(cls, frame: object) -> "AuditFrameDetail":
-        summary = AuditFrameSummary.from_model(frame)
-        detail = cls.model_validate(frame)
-        return detail.model_copy(
-            update={
-                **summary.model_dump(),
-                "detection_regions": regions_from_json(
-                    getattr(frame, "detection_regions", None)
-                ),
-            }
-        )
+class AuditScanPoint(BaseModel):
+    frame_index: int
+    latitude: float
+    longitude: float
+    heading: int
+    pitch: int
+    is_civic_issue: bool
+    severity: AuditSuggestionSeverity | None = None
+    suggestion_id: UUID | None = None
+    scan_source: AuditScanSource = AuditScanSource.pipeline
+
+
+class AnalyzeViewRequest(BaseModel):
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    heading: int = Field(ge=0, le=359)
+    pitch: int = Field(ge=-90, le=90, default=0)
+
+
+class OnDemandAnalyzeQuota(BaseModel):
+    limit: int
+    used: int
+    remaining: int
+    resets_at: datetime
 
 
 class SuggestionConversionResult(BaseModel):
     report_id: UUID
+
+
+def frame_image_proxy_url(run_id: UUID, frame_index: int) -> str:
+    return f"/api/v1/audit-runs/{run_id}/frames/{frame_index}/image"
+
+
+def suggestion_frame_image_proxy_url(suggestion_id: UUID) -> str:
+    return f"/api/v1/audit-suggestions/{suggestion_id}/frame-image"
+
+
+def _regions_from_json(
+    regions: list[dict[str, float]] | None,
+) -> list[DetectionRegionRead]:
+    if not regions:
+        return []
+    return [DetectionRegionRead.model_validate(region) for region in regions]
+
+
+def audit_suggestion_to_read(suggestion: AuditSuggestion) -> AuditSuggestionRead:
+    return AuditSuggestionRead(
+        id=suggestion.id,
+        audit_run_id=suggestion.audit_run_id,
+        category=suggestion.category,
+        status=suggestion.status,
+        latitude=suggestion.latitude,
+        longitude=suggestion.longitude,
+        confidence=suggestion.confidence,
+        severity=suggestion.severity,
+        description=suggestion.description,
+        model_name=suggestion.model_name,
+        explanation=suggestion.explanation,
+        image_attribution=suggestion.image_attribution,
+        department=suggestion.department,
+        heading=suggestion.heading,
+        pitch=suggestion.pitch,
+        frame_index=suggestion.frame_index,
+        detection_regions=_regions_from_json(suggestion.detection_regions),
+        frame_image_url=suggestion_frame_image_proxy_url(suggestion.id),
+        converted_report_id=suggestion.converted_report_id,
+        reviewer_note=suggestion.reviewer_note,
+        created_at=suggestion.created_at,
+    )
+
+
+def audit_frame_to_summary(frame: AuditFrame) -> AuditFrameSummary:
+    category = IssueCategory(frame.category) if frame.category else None
+    return AuditFrameSummary(
+        frame_index=frame.frame_index,
+        latitude=frame.latitude,
+        longitude=frame.longitude,
+        heading=frame.heading,
+        pitch=frame.pitch,
+        is_civic_issue=frame.is_civic_issue,
+        category=category,
+        confidence=frame.confidence,
+        severity=frame.severity,
+        description=frame.description,
+        suggestion_id=frame.suggestion_id,
+        frame_image_url=frame_image_proxy_url(frame.audit_run_id, frame.frame_index),
+    )
+
+
+def audit_frame_to_detail(frame: AuditFrame) -> AuditFrameDetail:
+    summary = audit_frame_to_summary(frame)
+    return AuditFrameDetail(
+        **summary.model_dump(),
+        detection_regions=_regions_from_json(frame.detection_regions),
+        analysis_result=None,
+        scan_source=frame.scan_source,
+    )
+
+
+def audit_frame_to_scan_point(frame: AuditFrame) -> AuditScanPoint:
+    return AuditScanPoint(
+        frame_index=frame.frame_index,
+        latitude=frame.latitude,
+        longitude=frame.longitude,
+        heading=frame.heading,
+        pitch=frame.pitch,
+        is_civic_issue=frame.is_civic_issue,
+        severity=frame.severity,
+        suggestion_id=frame.suggestion_id,
+        scan_source=frame.scan_source,
+    )

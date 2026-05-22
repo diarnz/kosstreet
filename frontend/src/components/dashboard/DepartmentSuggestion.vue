@@ -1,15 +1,12 @@
 <template>
-  <AppCard class="department-suggestion" variant="muted">
-    <AppBadge tone="info">Suggested department</AppBadge>
+  <span class="department-chip">
+    <span class="department-chip__label">Route to</span>
     <strong>{{ department }}</strong>
-    <p>Derived locally from issue category. Assignment is not saved until backend workflow support exists.</p>
-  </AppCard>
+  </span>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import AppBadge from '@/components/common/AppBadge.vue';
-import AppCard from '@/components/common/AppCard.vue';
 import type { IssueCategory } from '@/types/report';
 import { getSuggestedDepartment } from '@/utils/reportRouting';
 
@@ -21,18 +18,23 @@ const department = computed(() => getSuggestedDepartment(props.category));
 </script>
 
 <style scoped>
-.department-suggestion {
-  display: grid;
-  gap: var(--space-3);
+.department-chip {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-pill);
+  color: var(--status-verified-text);
+  background: var(--color-info-surface);
+  font-size: var(--text-xs);
 }
 
-.department-suggestion strong {
-  font-size: var(--text-lg);
+.department-chip__label {
+  color: var(--text-muted);
+  font-weight: 750;
 }
 
-.department-suggestion p {
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+.department-chip strong {
+  font-weight: 900;
 }
 </style>
-

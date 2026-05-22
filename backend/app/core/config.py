@@ -13,7 +13,10 @@ class Settings(BaseSettings):
 
     env: str = "development"
     api_v1_prefix: str = "/api/v1"
-    cors_origins_raw: str = Field(default="http://localhost:5173", alias="KOSTREET_CORS_ORIGINS")
+    cors_origins_raw: str = Field(
+        default="http://localhost:5173,http://localhost:5174",
+        alias="KOSTREET_CORS_ORIGINS",
+    )
 
     # PostgreSQL — async driver for the app, sync driver for Alembic
     database_url: str = Field(
@@ -42,6 +45,9 @@ class Settings(BaseSettings):
     )
     ai_max_image_size_px: int = Field(
         default=1024, alias="KOSTREET_AI_MAX_IMAGE_SIZE_PX"
+    )
+    audit_on_demand_max_per_run_per_hour: int = Field(
+        default=10, alias="KOSTREET_AUDIT_ON_DEMAND_MAX_PER_RUN_PER_HOUR"
     )
 
     # Google Street View

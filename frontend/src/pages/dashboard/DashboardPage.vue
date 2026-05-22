@@ -1,34 +1,27 @@
 <template>
   <DashboardLayout>
-    <div class="cluster-between">
-      <AppSectionHeader
-        eyebrow="Municipality Dashboard"
-        title="Prishtina issue command center"
-        description="The municipal operating surface for real report triage, source separation, department suggestions, and workflow visibility."
-      />
-      <div class="dashboard-actions">
-        <AppBadge v-if="reportsStore.lastFetchedAt" tone="info">
-          Fetched {{ formatDateTime(reportsStore.lastFetchedAt) }}
-        </AppBadge>
+    <header class="command-header animate-fade-up">
+      <div>
+        <p class="command-label">Command center</p>
+        <h1>Municipal dashboard</h1>
+        <p class="command-header__sub">Real-time triage across Kosovo</p>
+      </div>
+      <div class="command-header__actions">
+        <span v-if="reportsStore.lastFetchedAt" class="command-header__sync">
+          Synced {{ formatDateTime(reportsStore.lastFetchedAt) }}
+        </span>
         <AppButton :disabled="reportsStore.isLoading" variant="secondary" @click="reportsStore.fetchReports">
-          {{ reportsStore.isLoading ? 'Refreshing...' : 'Refresh reports' }}
+          {{ reportsStore.isLoading ? 'Syncing…' : 'Sync' }}
         </AppButton>
       </div>
-    </div>
+    </header>
 
-    <PitchModeBanner
-      v-if="reportsStore.usingDemoReports"
-      data-mode="demo"
-      message="Prepared demo reports are shown because live backend reports are empty or unavailable."
-    />
+    <GlassPanel v-if="reportsStore.error" label="Error" class="animate-fade-in">
+      <p class="command-error">{{ reportsStore.error }}</p>
+      <AppButton variant="secondary" size="sm" @click="reportsStore.fetchReports">Retry</AppButton>
+    </GlassPanel>
 
-    <AppCard v-if="reportsStore.error" class="dashboard-error" variant="inset">
-      <AppBadge tone="danger">Backend error</AppBadge>
-      <p>{{ reportsStore.error }}</p>
-      <AppButton variant="secondary" @click="reportsStore.fetchReports">Retry fetch</AppButton>
-    </AppCard>
-
-    <DashboardMetrics :metrics="reportsStore.metrics" />
+    <DashboardMetrics class="animate-stagger" :metrics="reportsStore.metrics" />
 
     <DashboardFilters
       :filters="reportsStore.filters"
@@ -39,44 +32,50 @@
       @update:status="reportsStore.setStatus"
     />
 
-    <StreetViewPanel
-      :is-loading="reportsStore.isLoading"
-      :record-count="reportsStore.filteredReports.length"
-      :target="selectedStreetViewTarget"
-    />
+    <section class="command-deck animate-fade-up">
+      <GlassPanel label="Inbox" class="command-deck__queue" padding="sm">
+        <ReportQueue
+          :is-demo-data="reportsStore.usingDemoReports"
+          :is-loading="reportsStore.isLoading"
+          :reports="reportsStore.filteredReports"
+          :selected-report-id="reportsStore.selectedReportId"
+          @select="reportsStore.selectReport"
+        />
+      </GlassPanel>
 
-    <section class="dashboard-workspace">
-      <ReportQueue
-        :is-demo-data="reportsStore.usingDemoReports"
-        :is-loading="reportsStore.isLoading"
-        :reports="reportsStore.filteredReports"
-        :selected-report-id="reportsStore.selectedReportId"
-        @select="reportsStore.selectReport"
-      />
+      <div class="command-deck__inspector">
+        <GlassPanel label="Inspector" elevated padding="sm">
+          <ReportDetailPanel
+            :allowed-next-statuses="reportsStore.allowedNextStatuses"
+            :detail-error="reportsStore.selectedDetailError"
+            :is-detail-loading="reportsStore.selectedDetailIsLoading"
+            :is-updating-status="reportsStore.isUpdatingStatus"
+            :is-demo-data="reportsStore.usingDemoReports"
+            :report="reportsStore.selectedReport"
+            :report-detail="reportsStore.selectedReportDetail"
+            :status-update-error="reportsStore.statusUpdateError"
+            @retry-detail="fetchSelectedReportDetail"
+            @update-status="reportsStore.updateSelectedReportStatus"
+          />
+        </GlassPanel>
 
-      <ReportDetailPanel
-        :allowed-next-statuses="reportsStore.allowedNextStatuses"
-        :detail-error="reportsStore.selectedDetailError"
-        :is-detail-loading="reportsStore.selectedDetailIsLoading"
-        :is-updating-status="reportsStore.isUpdatingStatus"
-        :is-demo-data="reportsStore.usingDemoReports"
-        :report="reportsStore.selectedReport"
-        :report-detail="reportsStore.selectedReportDetail"
-        :status-update-error="reportsStore.statusUpdateError"
-        @retry-detail="fetchSelectedReportDetail"
-        @update-status="reportsStore.updateSelectedReportStatus"
-      />
+        <GlassPanel label="Street preview" elevated padding="sm">
+          <StreetViewPanel
+            compact
+            :is-loading="reportsStore.isLoading"
+            :record-count="reportsStore.filteredReports.length"
+            :target="selectedStreetViewTarget"
+          />
+        </GlassPanel>
+      </div>
     </section>
   </DashboardLayout>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
-import PitchModeBanner from '@/components/common/PitchModeBanner.vue';
-import AppSectionHeader from '@/components/common/AppSectionHeader.vue';
+import GlassPanel from '@/components/common/GlassPanel.vue';
 import DashboardFilters from '@/components/dashboard/DashboardFilters.vue';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue';
 import ReportDetailPanel from '@/components/dashboard/ReportDetailPanel.vue';
@@ -94,7 +93,6 @@ const selectedStreetViewTarget = computed(() => {
   if (selectedReport && hasValidCoordinates(selectedReport)) {
     return reportToStreetViewTarget(selectedReport);
   }
-
   const firstMappableReport = reportsStore.mappableFilteredReports[0];
   return firstMappableReport ? reportToStreetViewTarget(firstMappableReport) : null;
 });
@@ -116,9 +114,7 @@ watch(
 watch(
   () => reportsStore.selectedReportId,
   (reportId) => {
-    if (reportId) {
-      void reportsStore.fetchReportDetail(reportId);
-    }
+    if (reportId) void reportsStore.fetchReportDetail(reportId);
   },
   { immediate: true },
 );
@@ -131,33 +127,63 @@ function fetchSelectedReportDetail() {
 </script>
 
 <style scoped>
-.dashboard-actions {
+.command-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid rgba(23, 33, 26, 0.08);
+}
+
+.command-header h1 {
+  margin: 0.15rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  letter-spacing: -0.04em;
+}
+
+.command-header__sub {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.command-header__actions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  justify-content: flex-end;
 }
 
-.dashboard-error {
+.command-header__sync {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 750;
+}
+
+.command-error {
+  margin: 0;
+  color: var(--color-repair-red);
+}
+
+.command-deck {
   display: grid;
-  gap: var(--space-3);
-}
-
-.dashboard-error p,
-p {
-  color: var(--text-secondary);
-}
-
-.dashboard-workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(22rem, 1.05fr);
-  gap: var(--space-5);
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: var(--space-4);
   align-items: start;
+  min-height: 34rem;
 }
 
-@media (max-width: 980px) {
-  .dashboard-workspace {
+.command-deck__inspector {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (max-width: 1080px) {
+  .command-deck {
     grid-template-columns: 1fr;
   }
 }

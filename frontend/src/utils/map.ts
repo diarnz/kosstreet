@@ -1,11 +1,22 @@
 import type { ReportSummary } from '@/types/report';
 
-export const PRISHTINA_VIEWPORT = {
+/** Default template city for maps, search bias, and demo data. */
+export const PRIZREN_VIEWPORT = {
   center: {
-    latitude: 42.6629,
-    longitude: 21.1655,
+    latitude: 42.2139,
+    longitude: 20.7397,
   },
-  zoom: 13,
+  zoom: 14,
+} as const;
+
+/** @deprecated Use PRIZREN_VIEWPORT */
+export const PRISHTINA_VIEWPORT = PRIZREN_VIEWPORT;
+
+export const KOSOVO_BOUNDS = {
+  north: 43.27,
+  south: 41.85,
+  east: 21.82,
+  west: 20.02,
 } as const;
 
 export function hasValidCoordinates(report: ReportSummary): boolean {

@@ -1,5 +1,7 @@
 @import "./tokens.css";
 @import "./utilities.css";
+@import "./animations.css";
+@import "./background.css";
 
 :root {
   color: var(--text-primary);
@@ -99,4 +101,53 @@ li {
 img {
   max-width: 100%;
   display: block;
+}
+
+/* Google Places Autocomplete dropdown */
+.pac-container {
+  z-index: var(--z-overlay);
+  margin-top: 0.35rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-paper);
+  box-shadow: var(--shadow-command);
+  font-family: var(--font-sans);
+}
+
+.pac-item {
+  padding: 0.65rem 1rem;
+  border-top: 1px solid rgba(23, 33, 26, 0.06);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background: rgba(221, 232, 213, 0.55);
+}
+
+.pac-item-query {
+  color: var(--text-primary);
+  font-weight: 850;
+}
+
+.pac-matched {
+  color: var(--color-municipal-green);
+  font-weight: 900;
+}
+
+gmp-place-autocomplete {
+  width: 100%;
+  color-scheme: light;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+gmp-place-autocomplete:focus-within {
+  outline: none;
+  border: none;
+  box-shadow: none;
 }
