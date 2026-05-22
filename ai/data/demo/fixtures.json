@@ -1,0 +1,119 @@
+[
+  {
+    "filename": "pothole_01.jpg",
+    "expected_category": "pothole",
+    "expected_civic": true,
+    "latitude": 42.6596,
+    "longitude": 21.1545,
+    "label": "Pothole on Bill Clinton Boulevard",
+    "department": "Roads / Public Works"
+  },
+  {
+    "filename": "pothole_02.jpg",
+    "expected_category": "pothole",
+    "expected_civic": true,
+    "latitude": 42.6601,
+    "longitude": 21.1552,
+    "label": "Road surface damage near Zahir Pajaziti Square",
+    "department": "Roads / Public Works"
+  },
+  {
+    "filename": "garbage_01.jpg",
+    "expected_category": "garbage",
+    "expected_civic": true,
+    "latitude": 42.6617,
+    "longitude": 21.1578,
+    "label": "Scattered waste on Rexhep Luci Street",
+    "department": "Sanitation"
+  },
+  {
+    "filename": "garbage_02.jpg",
+    "expected_category": "garbage",
+    "expected_civic": true,
+    "latitude": 42.6622,
+    "longitude": 21.1585,
+    "label": "Illegal dumping near residential area",
+    "department": "Sanitation"
+  },
+  {
+    "filename": "streetlight_01.jpg",
+    "expected_category": "broken_streetlight",
+    "expected_civic": true,
+    "latitude": 42.6629,
+    "longitude": 21.1600,
+    "label": "Damaged lamp post on Nene Tereza Boulevard",
+    "department": "Electrical / Infrastructure"
+  },
+  {
+    "filename": "streetlight_02.jpg",
+    "expected_category": "broken_streetlight",
+    "expected_civic": true,
+    "latitude": 42.6634,
+    "longitude": 21.1610,
+    "label": "Missing streetlight fixture near city park",
+    "department": "Electrical / Infrastructure"
+  },
+  {
+    "filename": "sidewalk_01.jpg",
+    "expected_category": "blocked_sidewalk",
+    "expected_civic": true,
+    "latitude": 42.6640,
+    "longitude": 21.1618,
+    "label": "Cracked sidewalk on Garibaldi Street",
+    "department": "Urban Maintenance"
+  },
+  {
+    "filename": "sidewalk_02.jpg",
+    "expected_category": "blocked_sidewalk",
+    "expected_civic": true,
+    "latitude": 42.6644,
+    "longitude": 21.1625,
+    "label": "Blocked pedestrian path near school",
+    "department": "Urban Maintenance"
+  },
+  {
+    "filename": "sign_01.jpg",
+    "expected_category": "damaged_sign",
+    "expected_civic": true,
+    "latitude": 42.6650,
+    "longitude": 21.1635,
+    "label": "Bent road sign at intersection",
+    "department": "Public Works"
+  },
+  {
+    "filename": "sign_02.jpg",
+    "expected_category": "damaged_sign",
+    "expected_civic": true,
+    "latitude": 42.6655,
+    "longitude": 21.1640,
+    "label": "Graffitied and damaged street sign",
+    "department": "Public Works"
+  },
+  {
+    "filename": "other_01.jpg",
+    "expected_category": "other",
+    "expected_civic": true,
+    "latitude": 42.6660,
+    "longitude": 21.1650,
+    "label": "Graffiti on municipal wall",
+    "department": "General"
+  },
+  {
+    "filename": "other_02.jpg",
+    "expected_category": "other",
+    "expected_civic": true,
+    "latitude": 42.6665,
+    "longitude": 21.1660,
+    "label": "Flooded street section",
+    "department": "General"
+  },
+  {
+    "filename": "clean_01.jpg",
+    "expected_category": "other",
+    "expected_civic": false,
+    "latitude": 42.6670,
+    "longitude": 21.1670,
+    "label": "Clean street - negative sample",
+    "department": null
+  }
+]
