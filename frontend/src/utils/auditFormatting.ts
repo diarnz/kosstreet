@@ -10,7 +10,7 @@ export const auditRunStatusLabels: Record<AuditRunStatus, string> = {
 export const auditRunStatusDescriptions: Record<AuditRunStatus, string> = {
   queued: 'Waiting for backend orchestration to start the AI street audit pipeline.',
   running: 'Backend and AI services are processing the selected route.',
-  completed: 'Backend marked the audit run complete. Suggestion data appears after the suggestion API is connected.',
+  completed: 'Backend marked the audit run complete. Review any persisted AI suggestions returned for this run.',
   failed: 'Backend marked the audit run failed. Review backend/AI logs before retrying.',
 };
 
