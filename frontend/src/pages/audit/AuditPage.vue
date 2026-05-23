@@ -6,14 +6,6 @@
         <h1>Street audit</h1>
         <p class="command-header__sub">Scan routes · Review AI · Convert to tickets</p>
       </div>
-      <div class="command-header__actions">
-        <span v-if="auditRunsStore.lastFetchedAt" class="command-header__sync">
-          {{ formatAuditDateTime(auditRunsStore.lastFetchedAt) }}
-        </span>
-        <AppButton :disabled="auditRunsStore.isLoading" variant="secondary" @click="auditRunsStore.fetchRuns">
-          {{ auditRunsStore.isLoading ? 'Syncing…' : 'Sync' }}
-        </AppButton>
-      </div>
     </header>
 
     <GlassPanel v-if="auditRunsStore.error" label="Error" class="animate-fade-in">
@@ -21,18 +13,19 @@
       <AppButton variant="secondary" size="sm" @click="auditRunsStore.fetchRuns">Retry</AppButton>
     </GlassPanel>
 
-    <AuditRunMetrics class="animate-stagger" :metrics="auditRunsStore.metrics" />
-
-    <section class="audit-deck animate-fade-up">
-      <GlassPanel label="Launch scan" elevated padding="sm" class="audit-deck__form">
+    <div class="audit-top animate-fade-up">
+      <AuditRunMetrics :metrics="auditRunsStore.metrics" />
+      <GlassPanel elevated padding="sm" class="audit-top__form">
         <AuditRunForm
           :error="auditRunsStore.createError"
           :is-creating="auditRunsStore.isCreating"
           @create="auditRunsStore.createRun"
         />
       </GlassPanel>
+    </div>
 
-      <GlassPanel label="Run queue" padding="sm" class="audit-deck__queue">
+    <section class="audit-deck animate-fade-up">
+      <GlassPanel padding="sm" class="audit-deck__queue">
         <AuditRunFilters
           :filters="auditRunsStore.filters"
           @clear="auditRunsStore.clearFilters"
@@ -50,7 +43,7 @@
       </GlassPanel>
     </section>
 
-    <GlassPanel label="Review workspace" elevated padding="sm" class="animate-fade-in">
+    <section class="audit-detail-section animate-fade-in">
       <AuditRunDetailPanel
         :convert-error-by-id="auditSuggestionsStore.convertErrorById"
         :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
@@ -75,7 +68,7 @@
         @review-suggestion="auditSuggestionsStore.reviewSuggestion"
         @analyzed="handleAnalyzedFrame"
       />
-    </GlassPanel>
+    </section>
 
     <DemoAuditSuggestionPanel v-if="uiStore.demoMode" :suggestions="demoAuditSuggestions" />
   </DashboardLayout>
@@ -83,7 +76,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import AppButton from '@/components/common/AppButton.vue';
 import GlassPanel from '@/components/common/GlassPanel.vue';
 import { listAuditFrames, listAuditScanPath } from '@/api/auditFrames';
 import DemoAuditSuggestionPanel from '@/components/audit/DemoAuditSuggestionPanel.vue';
@@ -287,13 +279,27 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
 
 <style scoped>
 .command-header {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   align-items: flex-end;
   justify-content: space-between;
   padding-bottom: var(--space-4);
+  padding-left: var(--space-4);
   border-bottom: 1px solid rgba(23, 33, 26, 0.08);
+}
+
+.command-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  bottom: var(--space-4);
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--color-amber-signal), var(--color-municipal-green));
+  box-shadow: 0 0 10px rgba(217, 144, 47, 0.35);
 }
 
 .command-header h1 {
@@ -301,6 +307,10 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
   letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--color-ink) 0%, rgba(47, 93, 80, 0.8) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 .command-header__sub {
@@ -327,9 +337,20 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   color: var(--color-repair-red);
 }
 
+.audit-top {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.audit-top__form {
+  flex: 1;
+  min-width: 0;
+}
+
 .audit-deck {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.85fr);
   gap: var(--space-4);
   align-items: start;
 }
@@ -339,9 +360,15 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   gap: var(--space-3);
 }
 
-@media (max-width: 1080px) {
-  .audit-deck {
-    grid-template-columns: 1fr;
+.audit-detail-section {
+  padding-top: var(--space-2);
+  border-top: 1px solid rgba(23, 33, 26, 0.08);
+}
+
+@media (max-width: 640px) {
+  .audit-top {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 </style>

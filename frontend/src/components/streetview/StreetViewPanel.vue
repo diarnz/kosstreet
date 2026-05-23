@@ -1,6 +1,6 @@
 <template>
   <AppCard class="street-view-panel stack" :class="{ 'street-view-panel--compact': compact }" variant="command">
-    <div class="cluster-between">
+    <div v-if="!compact" class="cluster-between">
       <div>
         <p class="eyebrow">{{ eyebrow }}</p>
         <h2>{{ title }}</h2>
@@ -24,7 +24,7 @@
         {{ statusMessage }}
       </div>
 
-      <StreetViewRecordSummary :target="target" />
+      <StreetViewRecordSummary v-if="!compact" :target="target" />
     </template>
   </AppCard>
 </template>

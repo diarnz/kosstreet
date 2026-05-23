@@ -30,15 +30,6 @@
         class="audit-suggestion-list__item"
         :class="{ 'audit-suggestion-list__item--selected': suggestion.id === selectedSuggestionId }"
       >
-        <AppButton
-          v-if="showScannerActions"
-          size="sm"
-          type="button"
-          :variant="suggestion.id === selectedSuggestionId ? 'primary' : 'secondary'"
-          @click="$emit('select', suggestion.id)"
-        >
-          {{ suggestion.id === selectedSuggestionId ? 'On scanner' : 'Show on scanner' }}
-        </AppButton>
         <AuditSuggestionCard
           :compact="compactCards"
           :convert-error="convertErrorById[suggestion.id] ?? null"
@@ -46,9 +37,11 @@
           :is-converting="convertLoadingById[suggestion.id] ?? false"
           :is-reviewing="reviewLoadingById[suggestion.id] ?? false"
           :review-error="reviewErrorById[suggestion.id] ?? null"
+          :show-scanner-action="showScannerActions"
           :suggestion="suggestion"
           @convert="$emit('convert', $event)"
           @review="(suggestionId, payload) => $emit('review', suggestionId, payload)"
+          @select="$emit('select', $event)"
         />
       </div>
     </div>
