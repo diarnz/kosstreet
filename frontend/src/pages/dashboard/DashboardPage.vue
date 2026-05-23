@@ -6,14 +6,6 @@
         <h1>Municipal dashboard</h1>
         <p class="command-header__sub">Real-time triage across Kosovo</p>
       </div>
-      <div class="command-header__actions">
-        <span v-if="reportsStore.lastFetchedAt" class="command-header__sync">
-          Synced {{ formatDateTime(reportsStore.lastFetchedAt) }}
-        </span>
-        <AppButton :disabled="reportsStore.isLoading" variant="secondary" @click="reportsStore.fetchReports">
-          {{ reportsStore.isLoading ? 'Syncing…' : 'Sync' }}
-        </AppButton>
-      </div>
     </header>
 
     <GlassPanel v-if="reportsStore.error" label="Error" class="animate-fade-in">
@@ -33,7 +25,7 @@
     />
 
     <section class="command-deck animate-fade-up">
-      <GlassPanel label="Inbox" class="command-deck__queue" padding="sm">
+      <GlassPanel class="command-deck__queue" padding="sm">
         <ReportQueue
           :is-demo-data="reportsStore.usingDemoReports"
           :is-loading="reportsStore.isLoading"
@@ -44,7 +36,7 @@
       </GlassPanel>
 
       <div class="command-deck__inspector">
-        <GlassPanel label="Inspector" elevated padding="sm">
+        <GlassPanel elevated padding="sm">
           <ReportDetailPanel
             :allowed-next-statuses="reportsStore.allowedNextStatuses"
             :detail-error="reportsStore.selectedDetailError"
@@ -74,7 +66,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
-import AppButton from '@/components/common/AppButton.vue';
 import GlassPanel from '@/components/common/GlassPanel.vue';
 import DashboardFilters from '@/components/dashboard/DashboardFilters.vue';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue';
@@ -128,13 +119,27 @@ function fetchSelectedReportDetail() {
 
 <style scoped>
 .command-header {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   align-items: flex-end;
   justify-content: space-between;
   padding-bottom: var(--space-4);
+  padding-left: var(--space-4);
   border-bottom: 1px solid rgba(23, 33, 26, 0.08);
+}
+
+.command-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.25rem;
+  bottom: var(--space-4);
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--color-municipal-green), var(--color-resolved-blue));
+  box-shadow: 0 0 10px rgba(47, 93, 80, 0.35);
 }
 
 .command-header h1 {
@@ -142,6 +147,10 @@ function fetchSelectedReportDetail() {
   font-family: var(--font-display);
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
   letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--color-ink) 0%, rgba(47, 93, 80, 0.85) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
 
 .command-header__sub {

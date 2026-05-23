@@ -20,7 +20,7 @@
         stroke-linecap="round"
       />
     </svg>
-    <span class="gps-locate__label">{{ isLoading ? 'Locating…' : 'Use my location' }}</span>
+    <span class="gps-locate__label">{{ isLoading ? 'Locating…' : 'My location' }}</span>
   </button>
 </template>
 
@@ -68,38 +68,44 @@ async function capture() {
 .gps-locate {
   position: relative;
   display: inline-flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  flex-direction: row;
+  gap: 0.45rem;
   align-items: center;
   justify-content: center;
-  width: 5.5rem;
-  height: 5.5rem;
-  padding: 0;
-  border: var(--border-soft);
-  border-radius: 50%;
+  height: 2.65rem;
+  padding: 0 1rem;
+  border: 1.5px solid rgba(47, 93, 80, 0.28);
+  border-radius: var(--radius-pill);
+  background: rgba(47, 93, 80, 0.06);
   color: var(--color-municipal-green);
-  background: rgba(255, 253, 247, 0.82);
-  box-shadow: var(--shadow-card);
+  font-size: var(--text-sm);
+  font-weight: 850;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition:
-    transform var(--motion-fast) var(--ease-out-expo),
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
     box-shadow var(--motion-fast) ease,
-    border-color var(--motion-fast) ease;
+    transform var(--motion-fast) var(--ease-out-expo),
+    color var(--motion-fast) ease;
 }
 
 .gps-locate:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: rgba(47, 93, 80, 0.32);
-  box-shadow: var(--shadow-command);
+  background: rgba(47, 93, 80, 0.12);
+  border-color: rgba(47, 93, 80, 0.5);
+  box-shadow: 0 4px 14px rgba(47, 93, 80, 0.18);
+  transform: translateY(-1px);
 }
 
 .gps-locate:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .gps-locate__ring {
   position: absolute;
   inset: -4px;
-  border-radius: 50%;
+  border-radius: var(--radius-pill);
   opacity: 0;
 }
 
@@ -109,23 +115,19 @@ async function capture() {
 }
 
 .gps-locate--success {
-  color: var(--text-inverse);
-  background: var(--action-primary);
-  border-color: transparent;
+  color: #fff;
+  background: var(--color-municipal-green);
+  border-color: var(--color-municipal-green);
+  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.2), 0 4px 16px rgba(47, 93, 80, 0.3);
 }
 
 .gps-locate__icon {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
 }
 
 .gps-locate__label {
-  position: absolute;
-  bottom: -1.65rem;
-  width: max-content;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  line-height: 1;
 }
 </style>

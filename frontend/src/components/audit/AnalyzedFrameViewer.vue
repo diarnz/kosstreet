@@ -29,7 +29,7 @@
         />
       </div>
 
-      <div class="analyzed-frame-viewer__summary">
+      <div v-if="layout !== 'scanner'" class="analyzed-frame-viewer__summary">
         <div class="analyzed-frame-viewer__title-row">
           <p class="analyzed-frame-viewer__title">
             {{ frameLabel ?? 'Analyzed frame' }}

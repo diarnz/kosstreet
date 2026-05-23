@@ -1,5 +1,6 @@
 <template>
   <header class="site-header">
+    <div class="site-header__glow" aria-hidden="true" />
     <div class="site-header__inner">
       <RouterLink class="site-header__brand" to="/" aria-label="KoStreet home">
         <AppLogo size="sm" />
@@ -16,26 +17,13 @@
         </RouterLink>
       </nav>
 
-      <button
-        class="site-header__demo"
-        :class="{ 'site-header__demo--active': uiStore.demoMode }"
-        :aria-pressed="uiStore.demoMode"
-        :aria-label="uiStore.demoMode ? 'Demo mode on' : 'Demo mode off'"
-        type="button"
-        @click="uiStore.toggleDemoMode"
-      >
-        Demo
-      </button>
     </div>
-    <div class="site-header__shine" aria-hidden="true" />
+    <div class="site-header__border" aria-hidden="true" />
   </header>
 </template>
 
 <script setup lang="ts">
 import AppLogo from '@/components/common/AppLogo.vue';
-import { useUiStore } from '@/stores/ui';
-
-const uiStore = useUiStore();
 
 const items = [
   { to: '/', label: 'Home' },
@@ -50,44 +38,73 @@ const items = [
   position: sticky;
   top: 0;
   z-index: var(--z-nav);
-  border-bottom: 1px solid rgba(255, 253, 247, 0.45);
-  background: rgba(255, 253, 247, 0.72);
-  backdrop-filter: blur(20px) saturate(1.2);
-  box-shadow: 0 12px 40px rgba(23, 33, 26, 0.06);
+  background: rgba(232, 226, 214, 0.78);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
 }
 
-.site-header__shine {
+/* Subtle top glow */
+.site-header__glow {
   position: absolute;
-  inset: 0 0 auto;
+  top: 0;
+  left: 10%;
+  right: 10%;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 253, 247, 0.95), transparent);
-  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(47, 93, 80, 0.55) 30%,
+    rgba(217, 144, 47, 0.35) 55%,
+    rgba(47, 93, 80, 0.55) 70%,
+    transparent
+  );
+  animation: gradient-shift 8s ease infinite;
+  background-size: 200% 100%;
+}
+
+/* Animated gradient border bottom */
+.site-header__border {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(47, 93, 80, 0.18) 20%,
+    rgba(217, 144, 47, 0.12) 50%,
+    rgba(63, 110, 140, 0.18) 80%,
+    transparent 100%
+  );
 }
 
 .site-header__inner {
+  position: relative;
   display: flex;
   gap: var(--space-4);
   align-items: center;
   justify-content: space-between;
   max-width: 1440px;
   margin-inline: auto;
-  padding: 0.65rem clamp(1rem, 4vw, 2.5rem);
+  padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
 }
 
 .site-header__brand {
   flex-shrink: 0;
-  transition: transform var(--motion-fast) var(--ease-out-expo);
+  transition: transform var(--motion-fast) var(--ease-out-expo), opacity var(--motion-fast) ease;
 }
 
 .site-header__brand:hover {
-  transform: scale(1.03);
+  transform: scale(1.04);
+  opacity: 0.85;
 }
 
 .site-header__nav {
   display: flex;
   flex: 1;
   flex-wrap: wrap;
-  gap: 0.2rem;
+  gap: 0.15rem;
   justify-content: center;
 }
 
@@ -95,54 +112,54 @@ const items = [
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 2.45rem;
-  padding: 0 1rem;
+  min-height: 2.25rem;
+  padding: 0 0.95rem;
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
   font-size: var(--text-sm);
   font-weight: 850;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
   transition:
     color var(--motion-fast) ease,
-    background var(--motion-fast) ease;
-}
-
-.site-header__link::after {
-  content: "";
-  position: absolute;
-  inset: auto 1rem -2px;
-  height: 2px;
-  border-radius: var(--radius-pill);
-  background: var(--color-municipal-green);
-  transform: scaleX(0);
-  transition: transform var(--motion-fast) var(--ease-out-expo);
+    background var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
 }
 
 .site-header__link:hover {
   color: var(--text-primary);
-  background: rgba(47, 93, 80, 0.08);
+  background: rgba(47, 93, 80, 0.09);
 }
 
+/* Active = filled green pill */
 .site-header__link.router-link-active {
-  color: var(--text-primary);
-  background: rgba(47, 93, 80, 0.12);
+  color: #fff;
+  background: var(--color-municipal-green);
+  box-shadow:
+    0 0 0 3px rgba(47, 93, 80, 0.18),
+    0 4px 18px rgba(47, 93, 80, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-.site-header__link.router-link-active::after {
-  transform: scaleX(1);
+.site-header__link.router-link-active:hover {
+  background: #244c42;
+  box-shadow:
+    0 0 0 3px rgba(47, 93, 80, 0.22),
+    0 6px 22px rgba(47, 93, 80, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
+/* Demo toggle */
 .site-header__demo {
   display: inline-flex;
-  gap: 0.45rem;
+  gap: 0.4rem;
   flex-shrink: 0;
   align-items: center;
-  min-height: 2.45rem;
-  padding: 0 1rem;
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
   border: 1px solid rgba(23, 33, 26, 0.1);
   border-radius: var(--radius-pill);
   color: var(--text-secondary);
-  background: rgba(255, 253, 247, 0.55);
+  background: rgba(255, 253, 247, 0.45);
   font-size: var(--text-sm);
   font-weight: 850;
   cursor: pointer;
@@ -155,14 +172,30 @@ const items = [
 
 .site-header__demo:hover {
   color: var(--text-primary);
-  box-shadow: 0 8px 24px rgba(23, 33, 26, 0.08);
+  background: rgba(255, 253, 247, 0.72);
+  box-shadow: 0 4px 16px rgba(23, 33, 26, 0.08);
 }
 
 .site-header__demo--active {
   color: var(--color-municipal-green);
-  background: rgba(47, 93, 80, 0.12);
-  border-color: rgba(47, 93, 80, 0.35);
+  background: rgba(47, 93, 80, 0.1);
+  border-color: rgba(47, 93, 80, 0.3);
   box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.1);
+}
+
+.site-header__demo-dot {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(58, 63, 59, 0.3);
+  transition: background var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+}
+
+.site-header__demo--active .site-header__demo-dot {
+  background: var(--color-municipal-green);
+  box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.25);
+  animation: glow-pulse 2.4s ease-in-out infinite;
 }
 
 @media (max-width: 760px) {

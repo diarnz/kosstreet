@@ -8,12 +8,21 @@
     >
       <defs>
         <radialGradient :id="gradientId" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" :stop-color="severityColor" stop-opacity="0.45" />
-          <stop offset="55%" :stop-color="severityColor" stop-opacity="0.18" />
+          <stop offset="0%" :stop-color="severityColor" stop-opacity="0.55" />
+          <stop offset="50%" :stop-color="severityColor" stop-opacity="0.22" />
           <stop offset="100%" :stop-color="severityColor" stop-opacity="0" />
         </radialGradient>
-        <filter :id="glowId" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="1.2" result="blur" />
+        <filter :id="glowId" x="-120%" y="-120%" width="340%" height="340%">
+          <feGaussianBlur stdDeviation="3.5" result="blur1" />
+          <feGaussianBlur stdDeviation="1.2" result="blur2" />
+          <feMerge>
+            <feMergeNode in="blur1" />
+            <feMergeNode in="blur2" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter :id="`${glowId}-soft`" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="1.8" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -27,6 +36,13 @@
         class="detection-overlay__target"
         :class="{ 'detection-overlay__target--active': activeIndex === index }"
       >
+        <circle
+          class="detection-overlay__pulse-outer"
+          :cx="region.center_x * 100"
+          :cy="region.center_y * 100"
+          :r="region.radius * 130"
+          :stroke="severityColor"
+        />
         <circle
           class="detection-overlay__pulse"
           :cx="region.center_x * 100"
@@ -49,30 +65,34 @@
           :r="region.radius * 88"
           :fill="`url(#${gradientId})`"
           :stroke="severityColor"
+          :filter="`url(#${glowId}-soft)`"
         />
         <circle
           class="detection-overlay__reticle"
           :cx="region.center_x * 100"
           :cy="region.center_y * 100"
-          r="0.9"
+          r="1.1"
           :fill="severityColor"
           stroke="#fff"
+          stroke-width="0.4"
         />
         <line
           class="detection-overlay__crosshair"
-          :x1="region.center_x * 100 - region.radius * 28"
-          :x2="region.center_x * 100 + region.radius * 28"
+          :x1="region.center_x * 100 - region.radius * 32"
+          :x2="region.center_x * 100 + region.radius * 32"
           :y1="region.center_y * 100"
           :y2="region.center_y * 100"
           :stroke="severityColor"
+          :filter="`url(#${glowId}-soft)`"
         />
         <line
           class="detection-overlay__crosshair"
           :x1="region.center_x * 100"
           :x2="region.center_x * 100"
-          :y1="region.center_y * 100 - region.radius * 28"
-          :y2="region.center_y * 100 + region.radius * 28"
+          :y1="region.center_y * 100 - region.radius * 32"
+          :y2="region.center_y * 100 + region.radius * 32"
           :stroke="severityColor"
+          :filter="`url(#${glowId}-soft)`"
         />
         <circle
           v-if="interactive"
@@ -85,40 +105,44 @@
       </g>
     </svg>
 
-    <button
-      v-if="interactive && displayRegions.length"
-      type="button"
-      class="detection-overlay__tap-hint"
-      :style="primaryHintStyle"
-      @click.stop="toggleInfo(0)"
-    >
-      Tap highlight
-    </button>
-
     <div
       v-if="interactive && activeIndex != null && activeRegion"
       class="detection-overlay__info animate-fade-in"
-      :style="infoPanelStyle(activeRegion)"
+      :style="{ '--tone': severityColor, ...infoPanelStyle(activeRegion) }"
       role="dialog"
       aria-label="Detection details"
       @click.stop
     >
+      <div class="detection-overlay__info-accent" :style="{ background: severityColor }" />
+
       <div class="detection-overlay__info-head">
-        <span class="detection-overlay__info-badge" :style="{ '--tone': severityColor }">
-          {{ severityLabel }}
-        </span>
-        <button type="button" class="detection-overlay__info-close" @click="activeIndex = null">
-          ×
+        <span class="detection-overlay__info-badge">{{ severityLabel }}</span>
+        <button type="button" class="detection-overlay__info-close" aria-label="Close" @click="activeIndex = null">
+          <svg viewBox="0 0 16 16" fill="none" width="10" height="10" aria-hidden="true">
+            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
         </button>
       </div>
+
       <strong class="detection-overlay__info-title">{{ categoryLabel }}</strong>
-      <p v-if="confidence != null" class="detection-overlay__info-confidence">
-        {{ confidenceLabel }} confidence
-      </p>
+
+      <div v-if="confidence != null" class="detection-overlay__info-conf">
+        <div class="detection-overlay__info-conf-track">
+          <span
+            class="detection-overlay__info-conf-fill"
+            :style="{ width: `${confidence * 100}%`, background: severityColor }"
+          />
+        </div>
+        <span class="detection-overlay__info-conf-val">{{ confidenceLabel }}</span>
+      </div>
+
       <p class="detection-overlay__info-copy">
         {{ description ?? 'The model flagged an issue in this area of the frame.' }}
       </p>
-      <p class="detection-overlay__info-note muted">AI-estimated location — approximate, not survey-grade.</p>
+
+      <p class="detection-overlay__info-note">
+        AI-estimated location — approximate, not survey-grade.
+      </p>
     </div>
   </div>
 </template>
@@ -175,23 +199,9 @@ const confidenceLabel = computed(() =>
   props.confidence == null ? 'Unknown' : formatConfidence(props.confidence),
 );
 
-const primaryRegion = computed(() => displayRegions.value[0] ?? null);
-const primaryHintStyle = computed(() => {
-  const region = primaryRegion.value;
-  if (!region) {
-    return {};
-  }
-  return {
-    left: `${clampPercent(region.center_x * 100, 18, 82)}%`,
-    top: `${clampPercent(region.center_y * 100 + region.radius * 70, 12, 88)}%`,
-  };
-});
-
 watch(
   () => props.regions,
-  () => {
-    activeIndex.value = null;
-  },
+  () => { activeIndex.value = null; },
 );
 
 function toggleInfo(index: number) {
@@ -230,36 +240,45 @@ function clampPercent(value: number, min: number, max: number) {
   height: 100%;
 }
 
+/* ─── Circles ─── */
+.detection-overlay__pulse-outer {
+  fill: none;
+  stroke-width: 0.4;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.3;
+  animation: detection-pulse-outer 2.8s ease-out infinite;
+}
+
 .detection-overlay__pulse {
   fill: none;
-  stroke-width: 0.55;
+  stroke-width: 0.6;
   vector-effect: non-scaling-stroke;
-  opacity: 0.55;
+  opacity: 0.6;
   animation: detection-pulse-ring 2.2s ease-out infinite;
 }
 
 .detection-overlay__ring {
   fill: none;
-  stroke-width: 0.75;
-  stroke-dasharray: 3 2.5;
+  stroke-width: 0.9;
+  stroke-dasharray: 3.5 2;
   vector-effect: non-scaling-stroke;
-  opacity: 0.95;
+  opacity: 1;
 }
 
 .detection-overlay__core {
-  stroke-width: 0.65;
+  stroke-width: 0.7;
   vector-effect: non-scaling-stroke;
 }
 
 .detection-overlay__reticle {
-  stroke-width: 0.35;
   vector-effect: non-scaling-stroke;
+  animation: detection-pulse-dot 2.2s ease-in-out infinite;
 }
 
 .detection-overlay__crosshair {
-  stroke-width: 0.35;
+  stroke-width: 0.45;
   vector-effect: non-scaling-stroke;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 .detection-overlay__hit {
@@ -270,45 +289,42 @@ function clampPercent(value: number, min: number, max: number) {
 }
 
 .detection-overlay__target--active .detection-overlay__ring {
-  stroke-width: 1;
+  stroke-width: 1.2;
   stroke-dasharray: none;
 }
 
 .detection-overlay__target--active .detection-overlay__core {
-  stroke-width: 0.9;
+  stroke-width: 1;
 }
 
-.detection-overlay__tap-hint {
-  position: absolute;
-  z-index: 2;
-  padding: 0.25rem 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  background: rgba(8, 12, 18, 0.72);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
-  pointer-events: all;
-}
-
+/* ─── Info popup ─── */
 .detection-overlay__info {
   position: absolute;
   z-index: 3;
   display: grid;
   gap: var(--space-2);
-  width: min(16rem, 72%);
-  padding: var(--space-3);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  width: min(15rem, 74%);
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-md);
-  background: rgba(8, 12, 18, 0.92);
+  background: rgba(4, 6, 10, 0.96);
   color: #fff;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--tone) 28%, transparent),
+    0 0 28px color-mix(in srgb, var(--tone) 38%, transparent),
+    0 0 60px color-mix(in srgb, var(--tone) 18%, transparent),
+    0 28px 56px rgba(0, 0, 0, 0.7);
   transform: translate(-50%, -100%);
   pointer-events: all;
+  overflow: hidden;
+}
+
+.detection-overlay__info-accent {
+  height: 3px;
+  width: 100%;
+  margin-bottom: calc(var(--space-2) * -1 + 2px);
+  opacity: 0.9;
+  box-shadow: 0 0 10px currentColor;
 }
 
 .detection-overlay__info-head {
@@ -316,71 +332,117 @@ function clampPercent(value: number, min: number, max: number) {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  padding: var(--space-3) var(--space-3) 0;
 }
 
 .detection-overlay__info-badge {
-  padding: 0.15rem 0.55rem;
-  border: 1px solid var(--tone);
+  padding: 0.18rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--tone) 20%, transparent);
-  font-size: 0.68rem;
-  font-weight: 800;
+  background: color-mix(in srgb, var(--tone) 22%, transparent);
+  color: color-mix(in srgb, var(--tone) 90%, #fff);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .detection-overlay__info-close {
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 1rem;
-  line-height: 1;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
+  transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+  flex-shrink: 0;
+}
+
+.detection-overlay__info-close:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .detection-overlay__info-title {
-  font-size: var(--text-sm);
+  padding: 0 var(--space-3);
+  font-size: 1rem;
   font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #fff;
 }
 
-.detection-overlay__info-confidence {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: var(--text-xs);
-  font-weight: 800;
+.detection-overlay__info-conf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+}
+
+.detection-overlay__info-conf-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.detection-overlay__info-conf-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.detection-overlay__info-conf-val {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
 }
 
 .detection-overlay__info-copy {
   margin: 0;
-  font-size: var(--text-sm);
-  line-height: 1.45;
+  padding: 0 var(--space-3);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--text-xs);
+  line-height: 1.5;
 }
 
 .detection-overlay__info-note {
   margin: 0;
-  font-size: 0.68rem;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.6rem;
   line-height: 1.35;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Animations ─── */
+@keyframes detection-pulse-outer {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.06); }
 }
 
 @keyframes detection-pulse-ring {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.1; }
+}
 
-  50% {
-    opacity: 0.12;
-  }
+@keyframes detection-pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .detection-overlay__pulse {
+  .detection-overlay__pulse,
+  .detection-overlay__pulse-outer,
+  .detection-overlay__reticle {
     animation: none;
-    opacity: 0.35;
   }
 }
 </style>

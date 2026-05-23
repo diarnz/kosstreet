@@ -1,12 +1,7 @@
 <template>
   <section class="audit-street-view-scanner">
     <div class="audit-street-view-scanner__head">
-      <div>
-        <p class="eyebrow">Street audit scanner</p>
-        <h3>{{ run.route_name }}</h3>
-        <p class="audit-street-view-scanner__subtitle muted">{{ scanProgressLabel }}</p>
-        <p v-if="quotaLabel" class="audit-street-view-scanner__quota muted">{{ quotaLabel }}</p>
-      </div>
+      <span class="audit-street-view-scanner__stat">{{ scanProgressLabel }}</span>
       <AppBadge tone="source-ai-audit">{{ modeLabel }}</AppBadge>
     </div>
 
@@ -28,50 +23,12 @@
     />
 
     <template v-else>
-      <div class="audit-street-view-scanner__toolbar">
-        <AppButton
-          v-if="!isDemoData"
-          :disabled="!canAnalyzeCurrentView"
-          size="sm"
-          type="button"
-          variant="secondary"
-          @click="analyzeCurrentView"
-        >
-          {{ isAnalyzingView ? 'Analyzing…' : 'Analyze this view' }}
-        </AppButton>
-
-        <AppButton
-          v-if="scannerMode === 'explore' && hasEvidenceForSelection"
-          size="sm"
-          type="button"
-          variant="secondary"
-          @click="enterEvidenceMode"
-        >
-          View evidence
-        </AppButton>
-
-        <AppButton
-          v-if="scannerMode === 'evidence'"
-          size="sm"
-          type="button"
-          variant="primary"
-          @click="enterExploreMode"
-        >
-          Explore again
-        </AppButton>
-      </div>
-
-      <AuditSeverityLegend />
-
-      <p v-if="analyzeError" class="audit-street-view-scanner__error" role="alert">
-        {{ analyzeError }}
-      </p>
-
       <p v-if="evidenceError" class="audit-street-view-scanner__error" role="alert">
         {{ evidenceError }}
       </p>
 
       <div
+        ref="viewportRef"
         class="audit-street-view-scanner__viewport"
         tabindex="0"
         aria-label="Street audit scanner viewport"
@@ -81,24 +38,42 @@
           <div v-if="scannerMode === 'evidence'" key="evidence" class="audit-street-view-scanner__evidence">
             <AppLoading v-if="evidenceLoading" label="Loading evidence frame" />
 
-            <AnalyzedFrameViewer
-              v-else-if="evidencePresentation"
-              layout="scanner"
-              show-metadata
-              :category="evidencePresentation.category"
-              :confidence="evidencePresentation.confidence"
-              :description="evidencePresentation.description"
-              :frame-index="evidencePresentation.frameIndex"
-              :frames-total="scanPath.length || run.frames_total || undefined"
-              :heading="evidencePresentation.heading"
-              :image-url="evidencePresentation.imageUrl"
-              :is-civic-issue="evidencePresentation.isCivicIssue"
-              :latitude="evidencePresentation.latitude"
-              :longitude="evidencePresentation.longitude"
-              :pitch="evidencePresentation.pitch"
-              :regions="evidencePresentation.regions"
-              :severity="evidencePresentation.severity"
-            />
+            <template v-else-if="evidencePresentation">
+              <AnalyzedFrameViewer
+                layout="scanner"
+                alt=""
+                :category="evidencePresentation.category"
+                :confidence="evidencePresentation.confidence"
+                :description="evidencePresentation.description"
+                :frame-index="evidencePresentation.frameIndex"
+                :frames-total="scanPath.length || run.frames_total || undefined"
+                :heading="evidencePresentation.heading"
+                :image-url="evidencePresentation.imageUrl"
+                :is-civic-issue="evidencePresentation.isCivicIssue"
+                :latitude="evidencePresentation.latitude"
+                :longitude="evidencePresentation.longitude"
+                :pitch="evidencePresentation.pitch"
+                :regions="evidencePresentation.regions"
+                :severity="evidencePresentation.severity"
+              />
+
+              <div class="audit-street-view-scanner__hud" aria-hidden="true">
+                <button class="audit-street-view-scanner__hud-btn" type="button" @click="enterExploreMode">
+                  <svg viewBox="0 0 16 16" fill="none" width="12" height="12" aria-hidden="true">
+                    <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  Explore
+                </button>
+                <button class="audit-street-view-scanner__hud-btn audit-street-view-scanner__hud-btn--fs" type="button" :aria-label="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'" @click="toggleFullscreen">
+                  <svg v-if="!isFullscreen" viewBox="0 0 16 16" fill="none" width="13" height="13" aria-hidden="true">
+                    <path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <svg v-else viewBox="0 0 16 16" fill="none" width="13" height="13" aria-hidden="true">
+                    <path d="M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </template>
 
             <AppEmptyState
               v-else
@@ -126,6 +101,17 @@
               title="Select a scan point"
               description="Choose a point on the timeline or a suggestion to load Street View."
             />
+            <button
+              v-if="hasEvidenceForSelection"
+              class="audit-street-view-scanner__hud-btn audit-street-view-scanner__hud-btn--explore"
+              type="button"
+              @click="enterEvidenceMode"
+            >
+              View evidence
+              <svg viewBox="0 0 16 16" fill="none" width="12" height="12" aria-hidden="true">
+                <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
           </div>
         </Transition>
 
@@ -161,7 +147,6 @@ import AppLoading from '@/components/common/AppLoading.vue';
 import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import AuditAnalyzingOverlay from '@/components/audit/AuditAnalyzingOverlay.vue';
 import AuditScanTimeline from '@/components/audit/AuditScanTimeline.vue';
-import AuditSeverityLegend from '@/components/audit/AuditSeverityLegend.vue';
 import StreetViewPanel from '@/components/streetview/StreetViewPanel.vue';
 import {
   analyzeAuditView,
@@ -234,6 +219,22 @@ const isAnalyzingView = ref(false);
 const analyzeError = ref<string | null>(null);
 const analyzeCancelled = ref(false);
 const scannerMode = ref<ScannerMode>('explore');
+const viewportRef = ref<HTMLElement | null>(null);
+const isFullscreen = ref(false);
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    void (viewportRef.value ?? document.documentElement).requestFullscreen();
+    isFullscreen.value = true;
+  } else {
+    void document.exitFullscreen();
+    isFullscreen.value = false;
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  isFullscreen.value = !!document.fullscreenElement;
+});
 const exploreLocked = ref(false);
 const evidenceFrame = ref<AuditFrameDetail | null>(null);
 const evidenceLoading = ref(false);
@@ -652,31 +653,32 @@ async function analyzeCurrentView() {
 .audit-street-view-scanner__head {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
 }
 
-.audit-street-view-scanner__head h3 {
-  margin: 0.15rem 0 0;
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
-  letter-spacing: -0.02em;
+.audit-street-view-scanner__info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.audit-street-view-scanner__subtitle {
-  margin: 0.2rem 0 0;
+.audit-street-view-scanner__stat {
+  color: var(--text-secondary);
   font-size: var(--text-sm);
+  font-weight: 750;
 }
 
-.audit-street-view-scanner__quota {
-  margin: 0.15rem 0 0;
+.audit-street-view-scanner__stat--quota {
+  color: var(--text-muted);
   font-size: var(--text-xs);
 }
 
-.audit-street-view-scanner__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
+.audit-street-view-scanner__sep {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
 }
 
 .audit-street-view-scanner__error {
@@ -696,17 +698,165 @@ async function analyzeCurrentView() {
   outline: none;
 }
 
+.audit-street-view-scanner__viewport:fullscreen {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence {
+  flex: 1;
+  min-height: 0;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(img),
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer),
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__media) {
+  width: 100%;
+  height: 100%;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: unset !important;
+  object-fit: contain;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore {
+  flex: 1;
+  min-height: 0;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
+  height: 100% !important;
+  min-height: unset !important;
+}
+
+/* Firefox */
+.audit-street-view-scanner__viewport:-moz-full-screen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+
+/* Safari */
+.audit-street-view-scanner__viewport:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+
 .audit-street-view-scanner__viewport:focus-visible {
   box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.35);
   border-radius: var(--radius-lg);
 }
 
-.audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
-  min-height: clamp(22rem, 60vh, 36rem);
+/* ─── Explore mode ─── */
+.audit-street-view-scanner__explore {
+  position: relative;
 }
 
+.audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
+  min-height: clamp(18rem, 42vh, 28rem);
+}
+
+/* ─── Evidence mode ─── */
 .audit-street-view-scanner__evidence {
-  min-height: clamp(22rem, 60vh, 36rem);
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer) {
+  width: min(100%, 42rem);
+}
+
+.audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__media) {
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.12),
+    0 8px 32px rgba(0, 0, 0, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Gradient vignette at top of evidence image for HUD readability */
+.audit-street-view-scanner__evidence::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 42rem);
+  height: 5rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  z-index: 15;
+  pointer-events: none;
+}
+
+/* ─── HUD overlay controls ─── */
+.audit-street-view-scanner__hud {
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 2rem), 42rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.audit-street-view-scanner__hud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem 0.45rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(5, 8, 14, 0.68);
+  backdrop-filter: blur(14px) saturate(1.4);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: all;
+  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.audit-street-view-scanner__hud-btn:hover {
+  background: rgba(5, 8, 14, 0.88);
+  border-color: rgba(255, 255, 255, 0.32);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* "View evidence" button: absolute over the explore canvas */
+.audit-street-view-scanner__hud-btn--explore {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 10;
+  pointer-events: all;
+  padding: 0.45rem 0.7rem 0.45rem 0.9rem;
+}
+
+.audit-street-view-scanner__hud-badge {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(5, 8, 14, 0.58);
+  backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.63rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .scanner-fade-enter-active,
@@ -720,8 +870,7 @@ async function analyzeCurrentView() {
 }
 
 @media (max-width: 720px) {
-  .audit-street-view-scanner__explore :deep(.street-view-panel__canvas),
-  .audit-street-view-scanner__evidence {
+  .audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
     min-height: 20rem;
   }
 }

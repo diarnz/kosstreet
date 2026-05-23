@@ -2,7 +2,7 @@ import type { AuditSuggestionSeverity, DetectionRegion } from '@/types/detection
 
 export const SEVERITY_COLORS: Record<AuditSuggestionSeverity, string> = {
   low: '#22c55e',
-  medium: '#eab308',
+  medium: '#ef4444',
   high: '#ef4444',
   critical: '#b91c1c',
 };

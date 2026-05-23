@@ -1,41 +1,20 @@
 <template>
   <section class="audit-run-form">
     <form class="audit-run-form__form" @submit.prevent="submit">
-      <AppField label="Municipality">
-        <AppInput
-          v-model="municipality"
-          aria-label="Municipality"
+      <div class="audit-run-form__search-row">
+        <LocationSearchField
+          v-model:latitude="selectedLatitude"
+          v-model:longitude="selectedLongitude"
+          v-model:location-label="selectedLabel"
+          label=""
+          placeholder="Search streets, landmarks, or neighborhoods…"
           :disabled="isCreating"
-          placeholder="Prizren"
+          hint=""
         />
-      </AppField>
-
-      <LocationSearchField
-        v-model:latitude="selectedLatitude"
-        v-model:longitude="selectedLongitude"
-        v-model:location-label="selectedLabel"
-        label="Route or location"
-        placeholder="Search streets, landmarks, or neighborhoods in Prizren"
-        :disabled="isCreating"
-        hint=""
-      />
-
-      <div class="audit-run-form__gps-row">
         <GpsLocateButton :disabled="isCreating" @located="onGpsLocated" />
       </div>
 
-      <AppField label="Notes">
-        <AppTextarea
-          v-model="notes"
-          aria-label="Audit notes"
-          :disabled="isCreating"
-          :maxlength="1000"
-          placeholder="Optional context for reviewers."
-        />
-      </AppField>
-
-      <div v-if="error" class="audit-run-form__error glass-panel">
-        <AppBadge tone="danger">Create failed</AppBadge>
+      <div v-if="error" class="audit-run-form__error">
         <p>{{ error }}</p>
       </div>
 
@@ -48,11 +27,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
-import AppField from '@/components/common/AppField.vue';
-import AppInput from '@/components/common/AppInput.vue';
-import AppTextarea from '@/components/common/AppTextarea.vue';
 import GpsLocateButton from '@/components/maps/GpsLocateButton.vue';
 import LocationSearchField from '@/components/maps/LocationSearchField.vue';
 import type { AuditRunCreatePayload } from '@/types/audit';
@@ -67,11 +42,9 @@ const emit = defineEmits<{
   create: [payload: AuditRunCreatePayload];
 }>();
 
-const municipality = ref('Prizren');
 const selectedLatitude = ref<number | null>(null);
 const selectedLongitude = ref<number | null>(null);
 const selectedLabel = ref<string | null>(null);
-const notes = ref('');
 
 const hasCoordinates = computed(
   () =>
@@ -83,24 +56,15 @@ const hasCoordinates = computed(
     selectedLongitude.value <= 180,
 );
 
-const hasRoute = computed(() => Boolean(selectedLabel.value?.trim()));
 const canSubmit = computed(
-  () => municipality.value.trim().length > 0 && hasRoute.value && hasCoordinates.value,
+  () => Boolean(selectedLabel.value?.trim()) && hasCoordinates.value,
 );
 
-function onGpsLocated(payload: {
-  latitude: number;
-  longitude: number;
-  label: string;
-}) {
+function onGpsLocated(payload: { latitude: number; longitude: number; accuracy: number; label: string }) {
   void applyLocatedSelection(payload);
 }
 
-async function applyLocatedSelection(payload: {
-  latitude: number;
-  longitude: number;
-  label: string;
-}) {
+async function applyLocatedSelection(payload: { latitude: number; longitude: number; label: string }) {
   const snapped = await snapToStreetViewAtCoordinates(payload.latitude, payload.longitude);
   selectedLatitude.value = snapped?.latitude ?? payload.latitude;
   selectedLongitude.value = snapped?.longitude ?? payload.longitude;
@@ -108,43 +72,44 @@ async function applyLocatedSelection(payload: {
 }
 
 function submit() {
-  if (!canSubmit.value || props.isCreating) {
-    return;
-  }
-
+  if (!canSubmit.value || props.isCreating) return;
   emit('create', {
-    municipality: municipality.value.trim(),
+    municipality: 'Prizren',
     route_name: selectedLabel.value?.trim() ?? null,
     latitude: selectedLatitude.value,
     longitude: selectedLongitude.value,
-    notes: notes.value.trim() ? notes.value.trim() : null,
+    notes: null,
   });
 }
 </script>
 
 <style scoped>
-.audit-run-form h2 {
-  margin: 0;
-}
-
 .audit-run-form__form {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
-.audit-run-form__gps-row {
+.audit-run-form__search-row {
   display: flex;
-  justify-content: center;
-  padding: var(--space-1) 0 var(--space-2);
+  gap: var(--space-2);
+  align-items: flex-end;
+}
+
+.audit-run-form__search-row > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .audit-run-form__error {
-  display: grid;
-  gap: var(--space-2);
-  padding: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: rgba(200, 76, 58, 0.07);
+  border: 1px solid rgba(200, 76, 58, 0.2);
 }
 
 .audit-run-form__error p {
-  color: var(--text-secondary);
+  margin: 0;
+  color: var(--color-repair-red);
+  font-size: var(--text-sm);
 }
 </style>
