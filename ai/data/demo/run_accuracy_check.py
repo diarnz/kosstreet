@@ -1,24 +1,27 @@
 """
-Validate classifier accuracy against all demo fixture images.
+Validate classifier accuracy against demo fixture images.
 Run from the ai/ directory:
 
     python data/demo/run_accuracy_check.py
+    python data/demo/run_accuracy_check.py --category garbage
 
-Reports two metrics:
-  1. Civic detection rate  — did the model correctly detect a civic issue exists?
-  2. Category accuracy     — did the model pick the right category?
-
-The gate uses civic detection rate >= 75%.
-Category accuracy is informational — stock images are not ideal for category testing.
-Replace images in data/demo/ with team-captured Kosovo street photos for full accuracy.
+Reports civic detection rate and category accuracy using the shared eval metrics.
 """
 
+from __future__ import annotations
+
+import argparse
 import json
 import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "src"))
 
+from kostreet_ai.evaluation.metrics import (
+    PredictionRecord,
+    format_confusion_matrix,
+    summarize_predictions,
+)
 from kostreet_ai.inference.classifier import get_classifier
 from kostreet_ai.preprocessing.image import encode_image_to_base64
 
@@ -32,14 +35,25 @@ COL_A = 22
 DIVIDER = "-" * 95
 
 
-def run() -> None:
+def _load_fixtures(category: str | None) -> list[dict]:
     fixtures = json.loads(FIXTURES_FILE.read_text(encoding="utf-8"))
-    classifier = get_classifier()
+    if category:
+        fixtures = [f for f in fixtures if f["expected_category"] == category]
+    return fixtures
 
-    print(f"\nKoStreet AI - Demo Accuracy Check")
-    print(f"Model  : {classifier.model_name}")
-    print(f"Images : {len(fixtures)}")
-    print(f"Gate   : civic detection >= {int(CIVIC_DETECTION_THRESHOLD * 100)}%\n")
+
+def run(category: str | None = None) -> int:
+    fixtures = _load_fixtures(category)
+    classifier = get_classifier()
+    records: list[PredictionRecord] = []
+    missing: list[str] = []
+
+    print("\nKoStreet AI - Demo Accuracy Check")
+    print(f"Model    : {classifier.model_name}")
+    print(f"Images   : {len(fixtures)}")
+    if category:
+        print(f"Category : {category}")
+    print(f"Gate     : civic detection >= {int(CIVIC_DETECTION_THRESHOLD * 100)}%\n")
 
     header = (
         f"{'filename':<{COL_F}}"
@@ -52,13 +66,6 @@ def run() -> None:
     print(header)
     print(DIVIDER)
 
-    civic_correct = 0
-    category_correct = 0
-    civic_total = 0
-    category_total = 0
-    missing: list[str] = []
-    failures: list[str] = []
-
     for fixture in fixtures:
         filename = fixture["filename"]
         image_path = DEMO_DIR / filename
@@ -68,33 +75,21 @@ def run() -> None:
             missing.append(filename)
             continue
 
-        image_bytes = image_path.read_bytes()
-        b64 = encode_image_to_base64(image_bytes)
+        b64 = encode_image_to_base64(image_path.read_bytes())
         result = classifier.classify(b64)
 
         expected_civic = fixture["expected_civic"]
         expected_cat = fixture["expected_category"]
-
-        # Civic detection: model must agree on whether this is a civic issue
         civic_match = result.is_civic_issue == expected_civic
-        civic_total += 1
-        if civic_match:
-            civic_correct += 1
 
-        # Category accuracy: only scored for images that are civic issues
         cat_match_str = "n/a"
         if expected_civic:
-            category_total += 1
             cat_match = result.category.value == expected_cat
-            if cat_match:
-                category_correct += 1
             cat_match_str = "OK" if cat_match else "MISS"
-            if not cat_match:
-                failures.append(f"{filename} (got {result.category.value})")
 
         civic_str = "OK" if civic_match else "MISS"
-
         expected_label = expected_cat if expected_civic else f"{expected_cat}(clean)"
+
         print(
             f"{filename:<{COL_F}}"
             f"{expected_label:<{COL_E}}"
@@ -104,41 +99,68 @@ def run() -> None:
             f"  {cat_match_str:>4}"
         )
 
+        records.append(
+            PredictionRecord(
+                sample_id=pathlib.Path(filename).stem,
+                filename=filename,
+                expected_category=expected_cat,
+                expected_civic=expected_civic,
+                predicted_category=result.category.value,
+                predicted_civic=result.is_civic_issue,
+                confidence=result.confidence,
+                difficulty="easy",
+                source="stock",
+                notes=fixture.get("label", ""),
+            )
+        )
+
     print(DIVIDER)
 
-    civic_rate = civic_correct / civic_total if civic_total else 0
-    cat_rate = category_correct / category_total if category_total else 0
-    gate_passed = civic_rate >= CIVIC_DETECTION_THRESHOLD
+    summary = summarize_predictions(records, missing_samples=len(missing))
+    gate_passed = summary.civic_detection_rate >= CIVIC_DETECTION_THRESHOLD
 
-    print(f"\nCivic detection : {civic_correct}/{civic_total} ({civic_rate * 100:.1f}%)  <- gate metric")
-    print(f"Category match  : {category_correct}/{category_total} ({cat_rate * 100:.1f}%)  <- informational")
+    print(
+        f"\nCivic detection : {summary.civic_detection_rate * 100:.1f}%  "
+        f"({len([r for r in records if r.predicted_civic == r.expected_civic])}/{len(records)})"
+    )
+    print(f"Category match  : {summary.category_accuracy * 100:.1f}%  <- informational")
     print(f"\nGate : {'PASSED' if gate_passed else 'FAILED'} (threshold {int(CIVIC_DETECTION_THRESHOLD * 100)}%)")
+
+    if records:
+        print("\nConfusion matrix:")
+        print(format_confusion_matrix(summary.confusion_matrix))
 
     if missing:
         print(f"\nMissing files: {', '.join(missing)}")
         print("Run data/demo/download_demo_images.py to download them.")
+        return 1
 
     if not gate_passed:
         print("\nCivic detection is below the gate threshold.")
-        print("The most likely cause is low-quality stock images.")
-        print()
-        print("ACTION REQUIRED - Replace these images with real team-captured photos:")
-        for f in fixtures:
-            if f["expected_civic"] and (DEMO_DIR / f["filename"]).exists():
-                path = DEMO_DIR / f["filename"]
-                b64 = encode_image_to_base64(path.read_bytes())
-                r = classifier.classify(b64)
-                if r.is_civic_issue != f["expected_civic"]:
-                    print(f"  - {f['filename']}  (label: {f['label']})")
-        sys.exit(1)
+        for record in records:
+            if record.expected_civic and not record.predicted_civic:
+                print(f"  - {record.filename}  ({record.notes})")
+        return 1
 
+    failures = [
+        f"{r.filename} (got {r.predicted_category})"
+        for r in records
+        if r.expected_civic and r.predicted_category != r.expected_category
+    ]
     if failures:
         print(f"\nCategory misses (informational): {len(failures)}")
-        for f in failures:
-            print(f"  - {f}")
-        print("\nThese mismatches are expected with generic stock images.")
-        print("Replace with team-captured Prishtina street photos for full category accuracy.")
+        for failure in failures:
+            print(f"  - {failure}")
+
+    return 0
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Demo fixture accuracy check")
+    parser.add_argument("--category", default=None, help="Filter to one expected category")
+    return parser.parse_args()
 
 
 if __name__ == "__main__":
-    run()
+    args = parse_args()
+    sys.exit(run(category=args.category))

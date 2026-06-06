@@ -1,0 +1,10 @@
+# Eval image binaries — bootstrap from data/demo/ with bootstrap_dataset.py
+images/**/*
+!images/**/.gitkeep
+street_view_sim/**/*
+!street_view_sim/**/.gitkeep
+
+# Generated run artifacts
+eval_report.json
+eval_baseline.json
+street_view_live_report.json
