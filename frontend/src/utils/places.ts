@@ -43,8 +43,13 @@ export function getPlacesMapOptions(): google.maps.MapOptions {
       latLngBounds: KOSOVO_BOUNDS,
       strictBounds: false,
     },
+    // Hide default Google Maps UI so the map canvas is clean — keep map tiles and attribution
     disableDefaultUI: true,
-    zoomControl: true,
+    zoomControl: false,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: false,
+    keyboardShortcuts: false,
   };
 }
 
