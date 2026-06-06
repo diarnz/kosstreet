@@ -68,6 +68,13 @@ class Settings(BaseSettings):
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.cors_origins_raw.split(",") if o.strip()]
 
+    @property
+    def upload_path(self) -> Path:
+        path = Path(self.upload_dir)
+        if path.is_absolute():
+            return path
+        return PROJECT_ROOT / path
+
 
 @lru_cache
 def get_settings() -> Settings:

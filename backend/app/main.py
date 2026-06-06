@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 import logging
-from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,16 +10,20 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.engine import AsyncSessionLocal
 from app.seeds.demo import seed_demo_data
+from app.storage.local import migrate_legacy_upload_dirs
 
 logger = logging.getLogger(__name__)
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-UPLOAD_DIR = PROJECT_ROOT / settings.upload_dir
+UPLOAD_DIR = settings.upload_path
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    moved = migrate_legacy_upload_dirs(UPLOAD_DIR)
+    if moved:
+        logger.info("Migrated %s report image(s) into %s", moved, UPLOAD_DIR)
+
     async with AsyncSessionLocal() as db:
         await seed_demo_data(db)
         await db.commit()

@@ -16,6 +16,7 @@ from app.schemas.report import (
     ReportStatusUpdate,
     ReportSummary,
 )
+from app.schemas.report_helpers import report_to_detail, report_to_summary
 from app.services.report_service import ReportService
 
 router = APIRouter()
@@ -37,7 +38,7 @@ async def list_reports(
         category=category,
         source=source,
     )
-    return [ReportSummary.model_validate(report) for report in reports]
+    return [report_to_summary(report) for report in reports]
 
 
 @router.post("/analyze-image", response_model=ImageAnalysisResult)
@@ -66,7 +67,7 @@ async def create_report(
 ) -> ReportSummary:
     payload = await _parse_report_create_payload(request, data)
     report = await service.create_report(payload, image)
-    return ReportSummary.model_validate(report)
+    return report_to_summary(report)
 
 
 @router.get("/{report_id}", response_model=ReportDetail)
@@ -75,7 +76,7 @@ async def get_report(
     service: ReportService = Depends(get_report_service),
 ) -> ReportDetail:
     report = await service.get_report_detail(report_id)
-    return ReportDetail.model_validate(report)
+    return report_to_detail(report)
 
 
 @router.patch("/{report_id}/status", response_model=ReportDetail)
@@ -85,7 +86,7 @@ async def update_report_status(
     service: ReportService = Depends(get_report_service),
 ) -> ReportDetail:
     report = await service.update_status(report_id, payload)
-    return ReportDetail.model_validate(report)
+    return report_to_detail(report)
 
 
 async def _parse_report_create_payload(request: Request, data: str | None) -> ReportCreate:

@@ -65,6 +65,12 @@ class ReportRepository:
             description=data.description,
             confidence=data.confidence,
             image_path=image_path,
+            severity=data.severity,
+            detection_regions=(
+                [region.model_dump() for region in data.detection_regions]
+                if data.detection_regions
+                else None
+            ),
             is_visible=True,
             created_at=now,
             updated_at=now,

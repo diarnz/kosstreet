@@ -51,12 +51,28 @@
           />
         </GlassPanel>
 
-        <GlassPanel label="Street preview" elevated padding="sm">
-          <StreetViewPanel
-            compact
+        <GlassPanel v-if="selectedReportPhoto" label="Photo evidence" elevated padding="sm">
+          <AnalyzedFrameViewer
+            layout="detail"
+            :image-url="selectedReportPhoto.imageUrl"
+            :regions="selectedReportPhoto.regions"
+            :severity="selectedReportPhoto.severity"
+            :category="selectedReportPhoto.category"
+            :description="selectedReportPhoto.description"
+            :confidence="selectedReportPhoto.confidence"
+            :latitude="selectedReportPhoto.latitude"
+            :longitude="selectedReportPhoto.longitude"
+            alt="Citizen report photo with AI detection overlay"
+            aria-label="Selected report photo evidence"
+          />
+        </GlassPanel>
+
+        <GlassPanel label="Issue map" elevated padding="sm">
+          <ReportsProblemMap
             :is-loading="reportsStore.isLoading"
-            :record-count="reportsStore.filteredReports.length"
-            :target="selectedStreetViewTarget"
+            :reports="reportsStore.filteredReports"
+            :selected-report-id="reportsStore.selectedReportId"
+            @select="reportsStore.selectReport"
           />
         </GlassPanel>
       </div>
@@ -71,21 +87,32 @@ import DashboardFilters from '@/components/dashboard/DashboardFilters.vue';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue';
 import ReportDetailPanel from '@/components/dashboard/ReportDetailPanel.vue';
 import ReportQueue from '@/components/dashboard/ReportQueue.vue';
-import StreetViewPanel from '@/components/streetview/StreetViewPanel.vue';
+import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
+import ReportsProblemMap from '@/components/dashboard/ReportsProblemMap.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { useReportsStore } from '@/stores/reports';
-import { formatDateTime } from '@/utils/reportFormatting';
-import { hasValidCoordinates, reportToStreetViewTarget } from '@/utils/streetView';
+import { resolveApiAssetUrl } from '@/utils/apiAssets';
+import type { ReportDetectionRegion, ReportSeverity } from '@/types/report';
+import type { IssueCategory } from '@/types/report';
 
 const reportsStore = useReportsStore();
 
-const selectedStreetViewTarget = computed(() => {
-  const selectedReport = reportsStore.selectedReport;
-  if (selectedReport && hasValidCoordinates(selectedReport)) {
-    return reportToStreetViewTarget(selectedReport);
+const selectedReportPhoto = computed(() => {
+  const report = reportsStore.selectedReportDetail ?? reportsStore.selectedReport;
+  if (!report?.image_url) {
+    return null;
   }
-  const firstMappableReport = reportsStore.mappableFilteredReports[0];
-  return firstMappableReport ? reportToStreetViewTarget(firstMappableReport) : null;
+
+  return {
+    imageUrl: resolveApiAssetUrl(report.image_url),
+    regions: (report.detection_regions ?? []) as ReportDetectionRegion[],
+    severity: (report.severity ?? 'medium') as ReportSeverity,
+    category: report.category as IssueCategory,
+    description: report.description ?? null,
+    confidence: report.confidence ?? null,
+    latitude: report.latitude,
+    longitude: report.longitude,
+  };
 });
 
 onMounted(() => {

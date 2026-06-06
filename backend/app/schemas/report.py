@@ -1,9 +1,15 @@
 ﻿from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import AuditSuggestionSeverity, IssueCategory, ReportSource, TicketStatus
+
+
+class DetectionRegion(BaseModel):
+    center_x: float = Field(ge=0, le=1)
+    center_y: float = Field(ge=0, le=1)
+    radius: float = Field(ge=0.04, le=0.18)
 
 
 class ReportCreate(BaseModel):
@@ -13,6 +19,8 @@ class ReportCreate(BaseModel):
     source: ReportSource = ReportSource.citizen
     description: str | None = Field(default=None, max_length=1000)
     confidence: float | None = Field(default=None, ge=0, le=1)
+    severity: AuditSuggestionSeverity | None = None
+    detection_regions: list[DetectionRegion] = Field(default_factory=list)
 
 
 class ReportStatusUpdate(BaseModel):
@@ -46,7 +54,16 @@ class ReportSummary(BaseModel):
     confidence: float | None
     is_visible: bool = True
     image_url: str | None = None
+    severity: AuditSuggestionSeverity | None = None
+    detection_regions: list[DetectionRegion] = Field(default_factory=list)
     created_at: datetime
+
+    @field_validator("detection_regions", mode="before")
+    @classmethod
+    def coerce_detection_regions(cls, value: object) -> list[DetectionRegion]:
+        if value is None:
+            return []
+        return value  # type: ignore[return-value]
 
 
 class ReportDetail(ReportSummary):
@@ -54,12 +71,6 @@ class ReportDetail(ReportSummary):
     resolution_note: str | None
     rejection_reason: str | None
     workflow_events: list[WorkflowEventRead]
-
-
-class DetectionRegion(BaseModel):
-    center_x: float = Field(ge=0, le=1)
-    center_y: float = Field(ge=0, le=1)
-    radius: float = Field(ge=0.04, le=0.18)
 
 
 class ReportAdminUpdate(BaseModel):

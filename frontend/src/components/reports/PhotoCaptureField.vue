@@ -41,9 +41,26 @@
     </label>
 
     <p v-if="error" class="photo-field__error">{{ error }}</p>
+    <p v-if="analysisError" class="photo-field__error">{{ analysisError }}</p>
+
+    <p v-if="isAnalyzing" class="photo-field__analyzing">AI is scanning your photo…</p>
 
     <div v-if="previewUrl && modelValue" class="photo-field__preview animate-fade-in">
-      <img :src="previewUrl" alt="Selected issue photo preview" />
+      <div class="photo-field__media">
+        <AnalyzedFrameViewer
+          v-if="analysis?.regions?.length"
+          layout="scanner"
+          :image-url="previewUrl"
+          :regions="analysis.regions"
+          :severity="analysis.severity ?? undefined"
+          :category="analysis.category ?? undefined"
+          :description="analysis.description ?? undefined"
+          :confidence="analysis.confidence ?? undefined"
+          alt="AI detection overlay on citizen photo"
+          aria-label="Citizen issue photo with AI detection overlay"
+        />
+        <img v-else :src="previewUrl" alt="Selected issue photo preview" />
+      </div>
       <div class="photo-field__meta">
         <strong>{{ modelValue.name }}</strong>
         <span>{{ fileSizeLabel }}</span>
@@ -60,15 +77,23 @@ import { computed, ref, toRef } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
+import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import { useImagePreview } from '@/composables/useImagePreview';
+import type { ReportImageAnalysis } from '@/types/report';
 
 const props = withDefaults(
   defineProps<{
     modelValue: File | null;
     maxSizeMb?: number;
+    analysis?: ReportImageAnalysis | null;
+    isAnalyzing?: boolean;
+    analysisError?: string | null;
   }>(),
   {
     maxSizeMb: 8,
+    analysis: null,
+    isAnalyzing: false,
+    analysisError: null,
   },
 );
 
@@ -181,19 +206,40 @@ function onDrop(event: DragEvent) {
   font-weight: 800;
 }
 
+.photo-field__analyzing {
+  margin: 0;
+  color: var(--color-municipal-green);
+  font-weight: 700;
+}
+
 .photo-field__preview {
   display: grid;
-  grid-template-columns: minmax(0, 11rem) 1fr;
+  grid-template-columns: minmax(0, 16rem) 1fr;
   gap: var(--space-4);
   align-items: center;
 }
 
-.photo-field__preview img {
+.photo-field__media {
+  position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-md);
-  object-fit: cover;
+  overflow: hidden;
   box-shadow: var(--shadow-card);
+}
+
+.photo-field__media img,
+.photo-field__media :deep(.analyzed-frame-viewer__image) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-field__media :deep(.analyzed-frame-viewer),
+.photo-field__media :deep(.analyzed-frame-viewer__layout),
+.photo-field__media :deep(.analyzed-frame-viewer__media) {
+  height: 100%;
 }
 
 .photo-field__meta {

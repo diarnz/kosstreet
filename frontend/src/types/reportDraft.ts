@@ -1,4 +1,4 @@
-import type { IssueCategory } from './report';
+import type { IssueCategory, ReportImageAnalysis } from './report';
 
 export interface AiSuggestion {
   category: IssueCategory;
@@ -16,5 +16,8 @@ export interface ReportDraft {
   locationLabel: string | null;
   description: string;
   aiSuggestion: AiSuggestion | null;
+  imageAnalysis: ReportImageAnalysis | null;
+  isAnalyzingImage: boolean;
+  imageAnalysisError: string | null;
 }
 

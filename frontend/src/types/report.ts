@@ -16,6 +16,23 @@ export type TicketStatus =
 
 export type ReportSource = 'citizen' | 'street_audit';
 
+export type ReportSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface ReportDetectionRegion {
+  center_x: number;
+  center_y: number;
+  radius: number;
+}
+
+export interface ReportImageAnalysis {
+  category?: IssueCategory | null;
+  confidence?: number | null;
+  severity?: ReportSeverity | null;
+  description?: string | null;
+  is_civic_issue?: boolean;
+  regions: ReportDetectionRegion[];
+}
+
 export interface ReportSummary {
   id: string;
   category: IssueCategory;
@@ -27,6 +44,8 @@ export interface ReportSummary {
   confidence?: number;
   is_visible?: boolean;
   image_url?: string | null;
+  severity?: ReportSeverity | null;
+  detection_regions?: ReportDetectionRegion[];
   created_at: string;
 }
 
@@ -55,6 +74,8 @@ export interface ReportCreatePayload {
   source: 'citizen';
   description?: string;
   confidence?: number;
+  severity?: ReportSeverity | null;
+  detection_regions?: ReportDetectionRegion[];
 }
 
 export interface ReportStatusUpdatePayload {

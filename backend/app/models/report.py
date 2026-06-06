@@ -3,7 +3,7 @@ from datetime import datetime
 
 from geoalchemy2 import Geography
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -31,6 +31,8 @@ class Report(Base):
     description: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Float)
     image_path: Mapped[str | None] = mapped_column(Text)
+    severity: Mapped[str | None] = mapped_column(String(20))
+    detection_regions: Mapped[list[dict[str, float]] | None] = mapped_column(JSONB)
     resolution_note: Mapped[str | None] = mapped_column(Text)
     rejection_reason: Mapped[str | None] = mapped_column(Text)
     is_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

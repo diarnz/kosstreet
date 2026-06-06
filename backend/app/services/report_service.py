@@ -33,7 +33,7 @@ VALID_TRANSITIONS: dict[TicketStatus, set[TicketStatus]] = {
 class ReportService:
     def __init__(self, db: AsyncSession) -> None:
         self.repository = ReportRepository(db)
-        self.storage = LocalFileStorage(settings.upload_dir)
+        self.storage = LocalFileStorage(settings.upload_path)
         self.ai_service = AIService(settings)
 
     async def list_reports(
@@ -69,8 +69,28 @@ class ReportService:
         payload: ReportCreate,
         image: UploadFile | None = None,
     ) -> Report:
-        image_path = await self.storage.save(image) if image else None
-        return await self.repository.create(payload, image_path=image_path)
+        image_path: str | None = None
+        create_payload = payload
+
+        if image is not None:
+            image_bytes = await image.read()
+            suffix = ".jpg"
+            if image.filename and "." in image.filename:
+                suffix = f".{image.filename.rsplit('.', 1)[-1].lower()}"
+            image_path = self.storage.save_bytes(image_bytes, suffix=suffix)
+
+            if not payload.detection_regions:
+                analysis = await self.ai_service.analyze_image_bytes(image_bytes)
+                create_payload = payload.model_copy(
+                    update={
+                        "confidence": payload.confidence or analysis.confidence,
+                        "description": payload.description or analysis.description,
+                        "severity": payload.severity or analysis.severity,
+                        "detection_regions": analysis.regions,
+                    }
+                )
+
+        return await self.repository.create(create_payload, image_path=image_path)
 
     async def get_report_detail(self, report_id: UUID, *, include_hidden: bool = False) -> Report:
         report = await self.repository.get_with_events(report_id)

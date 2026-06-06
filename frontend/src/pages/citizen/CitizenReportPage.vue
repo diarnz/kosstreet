@@ -17,7 +17,14 @@
     <GlassPanel class="report-wizard-shell animate-fade-in" elevated padding="lg">
       <div class="report-wizard">
       <Transition name="step" mode="out-in">
-        <PhotoCaptureField v-if="activeStep === 'photo'" key="photo" v-model="imageFile" />
+        <PhotoCaptureField
+          v-if="activeStep === 'photo'"
+          key="photo"
+          v-model="imageFile"
+          :analysis="draft.imageAnalysis"
+          :analysis-error="draft.imageAnalysisError"
+          :is-analyzing="draft.isAnalyzingImage"
+        />
 
         <LocationCaptureField
           v-else-if="activeStep === 'location'"
@@ -86,7 +93,7 @@ import LocationCaptureField from '@/components/reports/LocationCaptureField.vue'
 import PhotoCaptureField from '@/components/reports/PhotoCaptureField.vue';
 import ReportProgress, { type ReportStep } from '@/components/reports/ReportProgress.vue';
 import ReportReviewCard from '@/components/reports/ReportReviewCard.vue';
-import { createReport } from '@/api/reports';
+import { analyzeReportImage, createReport } from '@/api/reports';
 import CitizenLayout from '@/layouts/CitizenLayout.vue';
 import { useImagePreview } from '@/composables/useImagePreview';
 import type { ReportDraft } from '@/types/reportDraft';
@@ -111,10 +118,37 @@ const draft = reactive<ReportDraft>({
   locationLabel: null,
   description: '',
   aiSuggestion: null,
+  imageAnalysis: null,
+  isAnalyzingImage: false,
+  imageAnalysisError: null,
 });
 
-watch(imageFile, (file) => {
+watch(imageFile, async (file) => {
   draft.imageFile = file;
+  draft.imageAnalysis = null;
+  draft.imageAnalysisError = null;
+
+  if (!file) {
+    draft.isAnalyzingImage = false;
+    return;
+  }
+
+  draft.isAnalyzingImage = true;
+  try {
+    const analysis = await analyzeReportImage(file);
+    draft.imageAnalysis = analysis;
+    if (analysis.category && !draft.category) {
+      draft.category = analysis.category;
+    }
+    if (analysis.description && !description.value.trim()) {
+      description.value = analysis.description;
+    }
+  } catch (error) {
+    draft.imageAnalysisError =
+      error instanceof Error ? error.message : 'Could not analyze the photo.';
+  } finally {
+    draft.isAnalyzingImage = false;
+  }
 });
 
 watch(previewUrl, (url) => {
@@ -188,13 +222,19 @@ async function submitReport() {
   submitError.value = null;
 
   try {
-    const report = await createReport({
-      category: draft.category,
-      latitude: draft.latitude,
-      longitude: draft.longitude,
-      source: 'citizen',
-      description: description.value.trim() || undefined,
-    });
+    const report = await createReport(
+      {
+        category: draft.category,
+        latitude: draft.latitude,
+        longitude: draft.longitude,
+        source: 'citizen',
+        description: description.value.trim() || draft.imageAnalysis?.description || undefined,
+        confidence: draft.imageAnalysis?.confidence ?? undefined,
+        severity: draft.imageAnalysis?.severity ?? undefined,
+        detection_regions: draft.imageAnalysis?.regions ?? [],
+      },
+      draft.imageFile,
+    );
 
     await router.push({ name: 'report-status', params: { id: report.id } });
   } catch (error) {

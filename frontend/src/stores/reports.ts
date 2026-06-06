@@ -186,6 +186,9 @@ export const useReportsStore = defineStore('reports', {
           source: detail.source,
           description: detail.description,
           confidence: detail.confidence,
+          image_url: detail.image_url,
+          severity: detail.severity,
+          detection_regions: detail.detection_regions,
           created_at: detail.created_at,
         };
       }
