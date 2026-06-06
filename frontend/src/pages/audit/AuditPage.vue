@@ -15,59 +15,62 @@
 
     <div class="audit-top animate-fade-up">
       <AuditRunMetrics :metrics="auditRunsStore.metrics" />
-      <GlassPanel elevated padding="sm" class="audit-top__form">
-        <AuditRunForm
-          :error="auditRunsStore.createError"
-          :is-creating="auditRunsStore.isCreating"
-          @create="auditRunsStore.createRun"
-        />
-      </GlassPanel>
     </div>
 
     <section class="audit-deck animate-fade-up">
-      <GlassPanel padding="sm" class="audit-deck__queue">
-        <AuditRunFilters
-          :filters="auditRunsStore.filters"
-          @clear="auditRunsStore.clearFilters"
-          @update:search="auditRunsStore.setSearch"
-          @update:status="auditRunsStore.setStatus"
-        />
-        <AuditRunQueue
+      <div class="audit-deck__sidebar">
+        <GlassPanel elevated padding="sm" class="audit-top__form">
+          <AuditRunForm
+            :error="auditRunsStore.createError"
+            :is-creating="auditRunsStore.isCreating"
+            @create="auditRunsStore.createRun"
+          />
+        </GlassPanel>
+
+        <GlassPanel padding="sm" class="audit-deck__queue">
+          <AuditRunFilters
+            :filters="auditRunsStore.filters"
+            @clear="auditRunsStore.clearFilters"
+            @update:search="auditRunsStore.setSearch"
+            @update:status="auditRunsStore.setStatus"
+          />
+          <AuditRunQueue
+            :is-demo-data="auditRunsStore.usingDemoRuns"
+            :is-loading="auditRunsStore.isLoading"
+            :runs="auditRunsStore.filteredRuns"
+            :selected-run-id="auditRunsStore.selectedRunId"
+            @select="auditRunsStore.selectRun"
+            @view-street="selectRunForScanner"
+          />
+        </GlassPanel>
+      </div>
+
+      <GlassPanel class="audit-deck__detail" padding="lg" elevated>
+        <AuditRunDetailPanel
+          :convert-error-by-id="auditSuggestionsStore.convertErrorById"
+          :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
+          :converted-report-by-suggestion-id="auditSuggestionsStore.convertedReportBySuggestionId"
+          :frames="selectedRunFrames"
+          :frames-error="selectedRunFramesError"
+          :frames-loading="selectedRunFramesLoading"
           :is-demo-data="auditRunsStore.usingDemoRuns"
-          :is-loading="auditRunsStore.isLoading"
-          :runs="auditRunsStore.filteredRuns"
-          :selected-run-id="auditRunsStore.selectedRunId"
-          @select="auditRunsStore.selectRun"
-          @view-street="selectRunForScanner"
+          :review-error-by-id="auditSuggestionsStore.reviewErrorById"
+          :review-loading-by-id="auditSuggestionsStore.reviewLoadingById"
+          :run="auditRunsStore.selectedRun"
+          :scan-path="selectedRunScanPath"
+          :scan-path-error="selectedRunScanPathError"
+          :scan-path-loading="selectedRunScanPathLoading"
+          :suggestions="selectedRunSuggestions"
+          :suggestions-error="selectedRunSuggestionsError"
+          :suggestions-loading="selectedRunSuggestionsLoading"
+          @convert-suggestion="auditSuggestionsStore.convertSuggestionToReport"
+          @refresh-frames="refreshSelectedRunFrames"
+          @refresh-scan-path="refreshSelectedRunScanPath"
+          @refresh-suggestions="refreshSelectedRunSuggestions"
+          @review-suggestion="auditSuggestionsStore.reviewSuggestion"
+          @analyzed="handleAnalyzedFrame"
         />
       </GlassPanel>
-    </section>
-
-    <section class="audit-detail-section animate-fade-in">
-      <AuditRunDetailPanel
-        :convert-error-by-id="auditSuggestionsStore.convertErrorById"
-        :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
-        :converted-report-by-suggestion-id="auditSuggestionsStore.convertedReportBySuggestionId"
-        :frames="selectedRunFrames"
-        :frames-error="selectedRunFramesError"
-        :frames-loading="selectedRunFramesLoading"
-        :is-demo-data="auditRunsStore.usingDemoRuns"
-        :review-error-by-id="auditSuggestionsStore.reviewErrorById"
-        :review-loading-by-id="auditSuggestionsStore.reviewLoadingById"
-        :run="auditRunsStore.selectedRun"
-        :scan-path="selectedRunScanPath"
-        :scan-path-error="selectedRunScanPathError"
-        :scan-path-loading="selectedRunScanPathLoading"
-        :suggestions="selectedRunSuggestions"
-        :suggestions-error="selectedRunSuggestionsError"
-        :suggestions-loading="selectedRunSuggestionsLoading"
-        @convert-suggestion="auditSuggestionsStore.convertSuggestionToReport"
-        @refresh-frames="refreshSelectedRunFrames"
-        @refresh-scan-path="refreshSelectedRunScanPath"
-        @refresh-suggestions="refreshSelectedRunSuggestions"
-        @review-suggestion="auditSuggestionsStore.reviewSuggestion"
-        @analyzed="handleAnalyzedFrame"
-      />
     </section>
 
     <DemoAuditSuggestionPanel v-if="uiStore.demoMode" :suggestions="demoAuditSuggestions" />
@@ -342,17 +345,23 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   gap: var(--space-4);
   align-items: center;
   flex-wrap: wrap;
+  padding-bottom: var(--space-2);
 }
 
 .audit-top__form {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
 }
 
 .audit-deck {
   display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
+}
+
+.audit-deck__sidebar {
+  display: grid;
+  gap: var(--space-4);
 }
 
 .audit-deck__queue {
@@ -360,15 +369,14 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   gap: var(--space-3);
 }
 
-.audit-detail-section {
-  padding-top: var(--space-2);
-  border-top: 1px solid rgba(23, 33, 26, 0.08);
+.audit-deck__detail {
+  min-width: 0;
 }
 
-@media (max-width: 640px) {
-  .audit-top {
-    flex-direction: column;
-    align-items: stretch;
+@media (max-width: 1080px) {
+  .audit-deck {
+    grid-template-columns: 1fr;
   }
 }
+
 </style>

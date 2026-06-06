@@ -250,6 +250,8 @@ async function submitReport() {
 .report-wizard-shell {
   display: grid;
   gap: var(--space-5);
+  max-width: 48rem;
+  margin: 0 auto;
 }
 
 .report-wizard {

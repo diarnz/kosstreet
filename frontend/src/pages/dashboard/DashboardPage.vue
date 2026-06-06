@@ -223,4 +223,18 @@ function fetchSelectedReportDetail() {
     grid-template-columns: 1fr;
   }
 }
+
+@media (min-width: 1280px) {
+  .command-deck {
+    grid-template-columns: minmax(280px, 320px) minmax(400px, 1.1fr) minmax(420px, 1.4fr);
+  }
+  
+  .command-deck__inspector {
+    display: contents;
+  }
+  
+  .command-deck__inspector :deep(.street-view-panel__canvas) {
+    min-height: 34rem !important;
+  }
+}
 </style>
