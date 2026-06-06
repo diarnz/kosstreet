@@ -1,12 +1,19 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILES = (
+    PROJECT_ROOT / ".env",
+    Path(__file__).resolve().parents[2] / ".env",
+)
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=("../.env", ".env"),
+        env_file=ENV_FILES,
         env_prefix="KOSTREET_",
         extra="ignore",
     )
@@ -53,6 +60,9 @@ class Settings(BaseSettings):
     # Google Street View
     google_maps_api_key: str = Field(default="", alias="GOOGLE_MAPS_API_KEY")
     gsv_frame_size: int = 640
+
+    # Hidden admin CRUD (reports visibility) — KOSTREET_ADMIN_SECRET in .env
+    admin_secret: str = ""
 
     @property
     def cors_origins(self) -> list[str]:

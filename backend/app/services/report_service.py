@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.models.enums import IssueCategory, ReportSource, TicketStatus
 from app.models.report import Report
 from app.repositories.report_repository import ReportRepository
-from app.schemas.report import ImageAnalysisResult, ReportCreate, ReportStatusUpdate
+from app.schemas.report import ImageAnalysisResult, ReportAdminUpdate, ReportCreate, ReportStatusUpdate
 from app.services.ai_service import AIService
 from app.storage.local import LocalFileStorage
 
@@ -47,6 +47,21 @@ class ReportService:
             status=status_filter,
             category=category,
             source=source,
+            visible_only=True,
+        )
+
+    async def list_all_reports(
+        self,
+        *,
+        status_filter: TicketStatus | None = None,
+        category: IssueCategory | None = None,
+        source: ReportSource | None = None,
+    ) -> list[Report]:
+        return await self.repository.list(
+            status=status_filter,
+            category=category,
+            source=source,
+            visible_only=False,
         )
 
     async def create_report(
@@ -57,14 +72,44 @@ class ReportService:
         image_path = await self.storage.save(image) if image else None
         return await self.repository.create(payload, image_path=image_path)
 
-    async def get_report_detail(self, report_id: UUID) -> Report:
+    async def get_report_detail(self, report_id: UUID, *, include_hidden: bool = False) -> Report:
         report = await self.repository.get_with_events(report_id)
-        if report is None:
+        if report is None or (not include_hidden and not report.is_visible):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Report not found",
             )
         return report
+
+    async def admin_update_report(self, report_id: UUID, payload: ReportAdminUpdate) -> Report:
+        report = await self.get_report_detail(report_id, include_hidden=True)
+        await self.repository.update_fields(
+            report,
+            category=payload.category,
+            status=payload.status,
+            latitude=payload.latitude,
+            longitude=payload.longitude,
+            source=payload.source,
+            description=payload.description,
+            confidence=payload.confidence,
+            is_visible=payload.is_visible,
+        )
+        refreshed = await self.repository.get_with_events(report_id)
+        if refreshed is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Report not found",
+            )
+        return refreshed
+
+    async def admin_delete_report(self, report_id: UUID) -> None:
+        report = await self.repository.get(report_id)
+        if report is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Report not found",
+            )
+        await self.repository.delete(report)
 
     async def update_status(
         self,

@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
@@ -53,7 +53,27 @@ class AuditRunSummary(BaseModel):
     status: AuditRunStatus
     frames_total: int
     frames_done: int
+    is_visible: bool = True
     created_at: datetime
+
+
+class AuditRunAdminUpdate(BaseModel):
+    is_visible: bool | None = None
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class AuditSuggestionAdminUpdate(BaseModel):
+    is_visible: bool | None = None
+
+
+class AdminAuditRunSummary(AuditRunSummary):
+    suggestion_count: int = 0
+    civic_frame_count: int = 0
+
+
+class AdminAuditRunContent(BaseModel):
+    suggestions: list[AuditSuggestionRead]
+    frames: list[AuditFrameSummary]
 
 
 class DetectionRegionRead(BaseModel):
@@ -83,6 +103,7 @@ class AuditSuggestionRead(BaseModel):
     frame_image_url: str
     converted_report_id: UUID | None
     reviewer_note: str | None
+    is_visible: bool = True
     created_at: datetime
 
 
@@ -175,6 +196,7 @@ def audit_suggestion_to_read(suggestion: AuditSuggestion) -> AuditSuggestionRead
         frame_image_url=suggestion_frame_image_proxy_url(suggestion.id),
         converted_report_id=suggestion.converted_report_id,
         reviewer_note=suggestion.reviewer_note,
+        is_visible=suggestion.is_visible,
         created_at=suggestion.created_at,
     )
 

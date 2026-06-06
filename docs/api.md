@@ -3,7 +3,7 @@
 Base local URL:
 
 ```text
-http://localhost:8001
+http://localhost:8000
 ```
 
 Versioned API prefix:
@@ -15,7 +15,7 @@ Versioned API prefix:
 OpenAPI docs:
 
 ```text
-http://localhost:8001/docs
+http://localhost:8000/docs
 ```
 
 ## Health

@@ -1,4 +1,4 @@
-import asyncio
+﻿import asyncio
 import logging
 import re
 from dataclasses import dataclass
@@ -26,9 +26,15 @@ from app.repositories.audit_repository import (
 )
 from app.repositories.report_repository import ReportRepository
 from app.schemas.audit import (
+    AdminAuditRunContent,
+    AdminAuditRunSummary,
+    AuditRunAdminUpdate,
     AuditRunCreate,
+    AuditSuggestionAdminUpdate,
     AuditSuggestionReview,
     SuggestionConversionResult,
+    audit_frame_to_summary,
+    audit_suggestion_to_read,
 )
 from app.services.ai_service import AIService
 from app.services.report_service import get_department_for_category
@@ -87,11 +93,11 @@ class AuditService:
         self.ai_service = AIService(settings)
 
     async def list_runs(self) -> list[AuditRun]:
-        return await self.run_repository.list()
+        return await self.run_repository.list(visible_only=True)
 
-    async def get_run(self, run_id: UUID) -> AuditRun:
+    async def get_run(self, run_id: UUID, *, include_hidden: bool = False) -> AuditRun:
         run = await self.run_repository.get(run_id)
-        if run is None:
+        if run is None or (not include_hidden and not run.is_visible):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Audit run not found",
@@ -126,10 +132,78 @@ class AuditService:
 
     async def list_suggestions(self, run_id: UUID) -> list[AuditSuggestion]:
         await self.get_run(run_id)
-        return await self.suggestion_repository.list_for_run(run_id)
+        return await self.suggestion_repository.list_for_run(run_id, visible_only=True)
 
-    async def get_suggestion(self, suggestion_id: UUID) -> AuditSuggestion:
-        return await self._get_suggestion_or_404(suggestion_id)
+    async def get_suggestion(self, suggestion_id: UUID, *, include_hidden: bool = False) -> AuditSuggestion:
+        return await self._get_suggestion_or_404(suggestion_id, include_hidden=include_hidden)
+
+    async def admin_list_runs(self) -> list[AdminAuditRunSummary]:
+        runs = await self.run_repository.list_with_details(visible_only=False)
+        return [
+            AdminAuditRunSummary(
+                id=run.id,
+                municipality=run.municipality,
+                route_name=run.route_name,
+                scan_latitude=run.scan_latitude,
+                scan_longitude=run.scan_longitude,
+                notes=run.notes,
+                status=run.status,
+                frames_total=run.frames_total,
+                frames_done=run.frames_done,
+                is_visible=run.is_visible,
+                created_at=run.created_at,
+                suggestion_count=len(run.suggestions),
+                civic_frame_count=sum(1 for frame in run.frames if frame.is_civic_issue),
+            )
+            for run in runs
+        ]
+
+    async def admin_get_run_content(self, run_id: UUID) -> AdminAuditRunContent:
+        await self.get_run(run_id, include_hidden=True)
+        suggestions = await self.suggestion_repository.list_for_run(run_id, visible_only=False)
+        frames = await self.frame_repository.list_for_run(run_id)
+        civic_frames = [frame for frame in frames if frame.is_civic_issue]
+        return AdminAuditRunContent(
+            suggestions=[audit_suggestion_to_read(suggestion) for suggestion in suggestions],
+            frames=[audit_frame_to_summary(frame) for frame in civic_frames],
+        )
+
+    async def admin_update_run(self, run_id: UUID, payload: AuditRunAdminUpdate) -> AuditRun:
+        run = await self.get_run(run_id, include_hidden=True)
+        return await self.run_repository.update_fields(
+            run,
+            is_visible=payload.is_visible,
+            notes=payload.notes,
+        )
+
+    async def admin_delete_run(self, run_id: UUID) -> None:
+        run = await self.run_repository.get(run_id)
+        if run is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Audit run not found",
+            )
+        await self.run_repository.delete(run)
+
+    async def admin_update_suggestion(
+        self,
+        suggestion_id: UUID,
+        payload: AuditSuggestionAdminUpdate,
+    ) -> AuditSuggestion:
+        suggestion = await self._get_suggestion_or_404(suggestion_id, include_hidden=True)
+        return await self.suggestion_repository.update_fields(
+            suggestion,
+            is_visible=payload.is_visible,
+        )
+
+    async def admin_delete_suggestion(self, suggestion_id: UUID) -> None:
+        suggestion = await self.suggestion_repository.get(suggestion_id)
+        if suggestion is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Audit suggestion not found",
+            )
+        await self.suggestion_repository.delete(suggestion)
 
     async def review_suggestion(
         self,
@@ -344,13 +418,30 @@ class AuditService:
         await self.suggestion_repository.convert_to_report(suggestion, report.id)
         return SuggestionConversionResult(report_id=report.id)
 
-    async def _get_suggestion_or_404(self, suggestion_id: UUID) -> AuditSuggestion:
+    async def _get_suggestion_or_404(
+        self,
+        suggestion_id: UUID,
+        *,
+        include_hidden: bool = False,
+    ) -> AuditSuggestion:
         suggestion = await self.suggestion_repository.get(suggestion_id)
         if suggestion is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Audit suggestion not found",
             )
+        if not include_hidden:
+            if not suggestion.is_visible:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Audit suggestion not found",
+                )
+            run = await self.run_repository.get(suggestion.audit_run_id)
+            if run is None or not run.is_visible:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Audit suggestion not found",
+                )
         return suggestion
 
     async def _run_pipeline(self, run_id: UUID) -> None:

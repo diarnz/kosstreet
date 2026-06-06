@@ -41,6 +41,7 @@ export interface AuditSuggestion {
   frame_index?: number | null;
   detection_regions?: DetectionRegion[];
   frame_image_url?: string | null;
+  is_visible?: boolean;
   reviewer_note?: string | null;
   converted_report_id?: string | null;
   /** @deprecated Demo-only legacy field; prefer detection_regions */

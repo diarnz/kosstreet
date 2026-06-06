@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from datetime import datetime
 
 from geoalchemy2 import Geography
@@ -28,6 +28,7 @@ class AuditRun(Base):
     )
     frames_total: Mapped[int] = mapped_column(Integer, default=0)
     frames_done: Mapped[int] = mapped_column(Integer, default=0)
+    is_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
@@ -81,6 +82,7 @@ class AuditSuggestion(Base):
         UUID(as_uuid=True), ForeignKey("reports.id"), nullable=True
     )
     reviewer_note: Mapped[str | None] = mapped_column(Text)
+    is_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     audit_run: Mapped["AuditRun"] = relationship("AuditRun", back_populates="suggestions")

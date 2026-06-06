@@ -41,4 +41,3 @@ ai/data/demo/*.png
 ai/data/demo/*.webp
 ai/data/demo/audit_results.json
 
-.vercel

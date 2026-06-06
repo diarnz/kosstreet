@@ -21,8 +21,11 @@ class ReportRepository:
         status: str | None = None,
         category: str | None = None,
         source: str | None = None,
+        visible_only: bool = True,
     ) -> list[Report]:
         q = select(Report).order_by(Report.created_at.desc())
+        if visible_only:
+            q = q.where(Report.is_visible.is_(True))
         if status:
             q = q.where(Report.status == status)
         if category:
@@ -62,6 +65,7 @@ class ReportRepository:
             description=data.description,
             confidence=data.confidence,
             image_path=image_path,
+            is_visible=True,
             created_at=now,
             updated_at=now,
         )
@@ -133,6 +137,7 @@ class ReportRepository:
             longitude=longitude,
             description=description,
             confidence=confidence,
+            is_visible=True,
             created_at=now,
             updated_at=now,
         )
@@ -152,3 +157,42 @@ class ReportRepository:
         self.db.add(event)
         await self.db.flush()
         return report
+
+    async def update_fields(
+        self,
+        report: Report,
+        *,
+        category: str | None = None,
+        status: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+        source: str | None = None,
+        description: str | None = None,
+        confidence: float | None = None,
+        is_visible: bool | None = None,
+    ) -> Report:
+        if category is not None:
+            report.category = category
+        if status is not None:
+            report.status = status
+        if latitude is not None:
+            report.latitude = latitude
+        if longitude is not None:
+            report.longitude = longitude
+        if latitude is not None or longitude is not None:
+            report.location = ST_MakePoint(report.longitude, report.latitude)
+        if source is not None:
+            report.source = source
+        if description is not None:
+            report.description = description
+        if confidence is not None:
+            report.confidence = confidence
+        if is_visible is not None:
+            report.is_visible = is_visible
+        report.updated_at = datetime.now(timezone.utc)
+        await self.db.flush()
+        return report
+
+    async def delete(self, report: Report) -> None:
+        await self.db.delete(report)
+        await self.db.flush()

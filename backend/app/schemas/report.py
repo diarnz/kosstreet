@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -44,6 +44,8 @@ class ReportSummary(BaseModel):
     source: ReportSource
     description: str | None
     confidence: float | None
+    is_visible: bool = True
+    image_url: str | None = None
     created_at: datetime
 
 
@@ -58,6 +60,17 @@ class DetectionRegion(BaseModel):
     center_x: float = Field(ge=0, le=1)
     center_y: float = Field(ge=0, le=1)
     radius: float = Field(ge=0.04, le=0.18)
+
+
+class ReportAdminUpdate(BaseModel):
+    category: IssueCategory | None = None
+    status: TicketStatus | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    source: ReportSource | None = None
+    description: str | None = Field(default=None, max_length=1000)
+    confidence: float | None = Field(default=None, ge=0, le=1)
+    is_visible: bool | None = None
 
 
 class ImageAnalysisResult(BaseModel):

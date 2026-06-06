@@ -6,6 +6,7 @@ import DashboardPage from '@/pages/dashboard/DashboardPage.vue';
 import AuditPage from '@/pages/audit/AuditPage.vue';
 import AuditRunDetailPage from '@/pages/audit/AuditRunDetailPage.vue';
 import AuditSuggestionDetailPage from '@/pages/audit/AuditSuggestionDetailPage.vue';
+import ReportsAdminPage from '@/pages/admin/ReportsAdminPage.vue';
 import { useUiStore } from '@/stores/ui';
 
 export const router = createRouter({
@@ -22,6 +23,11 @@ export const router = createRouter({
       component: AuditSuggestionDetailPage,
     },
     { path: '/audit/:runId', name: 'street-audit-run-detail', component: AuditRunDetailPage },
+    {
+      path: '/__kostreet-admin/reports',
+      name: 'reports-admin',
+      component: ReportsAdminPage,
+    },
   ],
 });
 

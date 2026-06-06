@@ -1,9 +1,10 @@
-import uuid
+﻿import uuid
 from datetime import datetime, timedelta, timezone
 
 from geoalchemy2.functions import ST_MakePoint
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.audit import AuditFrame, AuditRun, AuditSuggestion
 from app.models.enums import AuditRunStatus, AuditSuggestionStatus, AuditScanSource
@@ -14,10 +15,22 @@ class AuditRunRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list(self) -> list[AuditRun]:
-        result = await self.db.execute(
-            select(AuditRun).order_by(AuditRun.created_at.desc())
+    async def list(self, *, visible_only: bool = True) -> list[AuditRun]:
+        q = select(AuditRun).order_by(AuditRun.created_at.desc())
+        if visible_only:
+            q = q.where(AuditRun.is_visible.is_(True))
+        result = await self.db.execute(q)
+        return list(result.scalars().all())
+
+    async def list_with_details(self, *, visible_only: bool = False) -> list[AuditRun]:
+        q = (
+            select(AuditRun)
+            .options(selectinload(AuditRun.suggestions), selectinload(AuditRun.frames))
+            .order_by(AuditRun.created_at.desc())
         )
+        if visible_only:
+            q = q.where(AuditRun.is_visible.is_(True))
+        result = await self.db.execute(q)
         return list(result.scalars().all())
 
     async def get(self, run_id: uuid.UUID) -> AuditRun | None:
@@ -40,12 +53,32 @@ class AuditRunRepository:
             status=AuditRunStatus.queued,
             frames_total=0,
             frames_done=0,
+            is_visible=True,
             created_at=now,
             updated_at=now,
         )
         self.db.add(run)
         await self.db.flush()
         return run
+
+    async def update_fields(
+        self,
+        run: AuditRun,
+        *,
+        is_visible: bool | None = None,
+        notes: str | None = None,
+    ) -> AuditRun:
+        if is_visible is not None:
+            run.is_visible = is_visible
+        if notes is not None:
+            run.notes = notes
+        run.updated_at = datetime.now(timezone.utc)
+        await self.db.flush()
+        return run
+
+    async def delete(self, run: AuditRun) -> None:
+        await self.db.delete(run)
+        await self.db.flush()
 
     async def set_status(self, run_id: uuid.UUID, status: str) -> None:
         await self.db.execute(
@@ -76,12 +109,20 @@ class AuditSuggestionRepository:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def list_for_run(self, run_id: uuid.UUID) -> list[AuditSuggestion]:
-        result = await self.db.execute(
+    async def list_for_run(
+        self,
+        run_id: uuid.UUID,
+        *,
+        visible_only: bool = True,
+    ) -> list[AuditSuggestion]:
+        q = (
             select(AuditSuggestion)
             .where(AuditSuggestion.audit_run_id == run_id)
             .order_by(AuditSuggestion.created_at.asc())
         )
+        if visible_only:
+            q = q.where(AuditSuggestion.is_visible.is_(True))
+        result = await self.db.execute(q)
         return list(result.scalars().all())
 
     async def get(self, suggestion_id: uuid.UUID) -> AuditSuggestion | None:
@@ -113,6 +154,7 @@ class AuditSuggestionRepository:
                 pitch=s.get("pitch"),
                 frame_index=s.get("frame_index"),
                 detection_regions=s.get("detection_regions"),
+                is_visible=True,
                 created_at=s.get("created_at", datetime.now(timezone.utc)),
             )
             self.db.add(obj)
@@ -140,6 +182,21 @@ class AuditSuggestionRepository:
         suggestion.converted_report_id = report_id
         await self.db.flush()
         return suggestion
+
+    async def update_fields(
+        self,
+        suggestion: AuditSuggestion,
+        *,
+        is_visible: bool | None = None,
+    ) -> AuditSuggestion:
+        if is_visible is not None:
+            suggestion.is_visible = is_visible
+        await self.db.flush()
+        return suggestion
+
+    async def delete(self, suggestion: AuditSuggestion) -> None:
+        await self.db.delete(suggestion)
+        await self.db.flush()
 
 
 class AuditFrameRepository:

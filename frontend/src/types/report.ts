@@ -25,6 +25,8 @@ export interface ReportSummary {
   source: ReportSource;
   description?: string | null;
   confidence?: number;
+  is_visible?: boolean;
+  image_url?: string | null;
   created_at: string;
 }
 

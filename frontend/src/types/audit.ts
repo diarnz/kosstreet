@@ -18,6 +18,7 @@ export interface AuditRunSummary {
   status: AuditRunStatus;
   frames_total: number;
   frames_done: number;
+  is_visible?: boolean;
   created_at: string;
 }
 
