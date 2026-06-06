@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, UploadFile, status
 
 from kostreet_ai.config import settings
 from kostreet_ai.inference.classifier import get_classifier
+from kostreet_ai.inference.prompts import ClassificationContext
 from kostreet_ai.preprocessing.image import (
     decode_base64_to_bytes,
     encode_image_to_base64,
@@ -33,7 +34,7 @@ def _classify_bytes(image_bytes: bytes) -> ClassificationResponse:
             detail="Invalid or unreadable image.",
         )
     b64 = encode_image_to_base64(image_bytes, settings.max_image_size_px)
-    result = get_classifier().classify(b64)
+    result = get_classifier().classify(b64, context=ClassificationContext.citizen_upload)
     return ClassificationResponse(
         category=result.category,
         confidence=result.confidence,

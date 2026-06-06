@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from kostreet_ai.config import settings
 from kostreet_ai.inference.classifier import get_classifier
+from kostreet_ai.inference.prompts import ClassificationContext
 from kostreet_ai.preprocessing.image import (
     decode_base64_to_bytes,
     encode_image_to_base64,
@@ -59,10 +60,11 @@ def analyze_frame(request: FrameAnalysisRequest) -> FrameAnalysisResponse:
         )
 
     b64 = encode_image_to_base64(raw_bytes, settings.max_image_size_px)
-    result = get_classifier().classify(b64)
+    result = get_classifier().classify(b64, context=ClassificationContext.street_audit)
 
     detections: list[DetectionWithLocation] = []
-    if result.is_civic_issue and result.confidence >= settings.confidence_threshold:
+    category_threshold = settings.get_category_threshold(result.category)
+    if result.is_civic_issue and result.confidence >= category_threshold:
         detections.append(
             DetectionWithLocation(
                 category=result.category,

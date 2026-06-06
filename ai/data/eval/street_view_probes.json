@@ -1,0 +1,58 @@
+[
+  {
+    "id": "bill_clinton_start",
+    "latitude": 42.6596,
+    "longitude": 21.1545,
+    "label": "Bill Clinton Blvd — route start",
+    "route": "bill_clinton_audit"
+  },
+  {
+    "id": "bill_clinton_mid",
+    "latitude": 42.6617,
+    "longitude": 21.1578,
+    "label": "Bill Clinton Blvd — mid corridor",
+    "route": "bill_clinton_audit"
+  },
+  {
+    "id": "bill_clinton_end",
+    "latitude": 42.6640,
+    "longitude": 21.1611,
+    "label": "Bill Clinton Blvd — route end",
+    "route": "bill_clinton_audit"
+  },
+  {
+    "id": "zahir_pajaziti",
+    "latitude": 42.6601,
+    "longitude": 21.1552,
+    "label": "Near Zahir Pajaziti Square",
+    "route": "fixture_coords"
+  },
+  {
+    "id": "rexhep_luci",
+    "latitude": 42.6617,
+    "longitude": 21.1578,
+    "label": "Rexhep Luci Street area",
+    "route": "fixture_coords"
+  },
+  {
+    "id": "nene_tereza",
+    "latitude": 42.6629,
+    "longitude": 21.1600,
+    "label": "Nene Tereza Boulevard",
+    "route": "fixture_coords"
+  },
+  {
+    "id": "garibaldi",
+    "latitude": 42.6640,
+    "longitude": 21.1618,
+    "label": "Garibaldi Street",
+    "route": "fixture_coords"
+  },
+  {
+    "id": "city_park",
+    "latitude": 42.6634,
+    "longitude": 21.1610,
+    "label": "Near city park",
+    "route": "fixture_coords"
+  }
+]

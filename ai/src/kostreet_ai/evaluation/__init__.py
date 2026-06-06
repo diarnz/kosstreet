@@ -1,4 +1,21 @@
-from kostreet_ai.evaluation.metrics import confidence_summary
+from kostreet_ai.evaluation.metrics import (
+    CategoryScore,
+    EvalSummary,
+    PredictionRecord,
+    check_recall_gates,
+    confidence_summary,
+    evaluate_gates,
+    format_confusion_matrix,
+    summarize_predictions,
+)
 
-__all__ = ["confidence_summary"]
-
+__all__ = [
+    "CategoryScore",
+    "EvalSummary",
+    "PredictionRecord",
+    "check_recall_gates",
+    "confidence_summary",
+    "evaluate_gates",
+    "format_confusion_matrix",
+    "summarize_predictions",
+]

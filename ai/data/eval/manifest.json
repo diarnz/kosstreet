@@ -1,0 +1,249 @@
+[
+  {
+    "id": "pothole_01",
+    "filename": "images/pothole/pothole_01.jpg",
+    "expected_category": "pothole",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Pothole on Bill Clinton Boulevard"
+  },
+  {
+    "id": "pothole_01_sim",
+    "filename": "street_view_sim/pothole/pothole_01_sim.jpg",
+    "expected_category": "pothole",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/pothole/pothole_01.jpg",
+    "notes": "Street View simulation of pothole_01.jpg"
+  },
+  {
+    "id": "pothole_02",
+    "filename": "images/pothole/pothole_02.jpg",
+    "expected_category": "pothole",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Road surface damage near Zahir Pajaziti Square"
+  },
+  {
+    "id": "pothole_02_sim",
+    "filename": "street_view_sim/pothole/pothole_02_sim.jpg",
+    "expected_category": "pothole",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/pothole/pothole_02.jpg",
+    "notes": "Street View simulation of pothole_02.jpg"
+  },
+  {
+    "id": "garbage_01",
+    "filename": "images/garbage/garbage_01.jpg",
+    "expected_category": "garbage",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Scattered waste on Rexhep Luci Street"
+  },
+  {
+    "id": "garbage_01_sim",
+    "filename": "street_view_sim/garbage/garbage_01_sim.jpg",
+    "expected_category": "garbage",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/garbage/garbage_01.jpg",
+    "notes": "Street View simulation of garbage_01.jpg"
+  },
+  {
+    "id": "garbage_02",
+    "filename": "images/garbage/garbage_02.jpg",
+    "expected_category": "garbage",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Illegal dumping near residential area"
+  },
+  {
+    "id": "garbage_02_sim",
+    "filename": "street_view_sim/garbage/garbage_02_sim.jpg",
+    "expected_category": "garbage",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/garbage/garbage_02.jpg",
+    "notes": "Street View simulation of garbage_02.jpg"
+  },
+  {
+    "id": "streetlight_01",
+    "filename": "images/broken_streetlight/streetlight_01.jpg",
+    "expected_category": "broken_streetlight",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Damaged lamp post on Nene Tereza Boulevard"
+  },
+  {
+    "id": "streetlight_01_sim",
+    "filename": "street_view_sim/broken_streetlight/streetlight_01_sim.jpg",
+    "expected_category": "broken_streetlight",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/broken_streetlight/streetlight_01.jpg",
+    "notes": "Street View simulation of streetlight_01.jpg"
+  },
+  {
+    "id": "streetlight_02",
+    "filename": "images/broken_streetlight/streetlight_02.jpg",
+    "expected_category": "broken_streetlight",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Missing streetlight fixture near city park"
+  },
+  {
+    "id": "streetlight_02_sim",
+    "filename": "street_view_sim/broken_streetlight/streetlight_02_sim.jpg",
+    "expected_category": "broken_streetlight",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/broken_streetlight/streetlight_02.jpg",
+    "notes": "Street View simulation of streetlight_02.jpg"
+  },
+  {
+    "id": "sidewalk_01",
+    "filename": "images/blocked_sidewalk/sidewalk_01.jpg",
+    "expected_category": "blocked_sidewalk",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Cracked sidewalk on Garibaldi Street"
+  },
+  {
+    "id": "sidewalk_01_sim",
+    "filename": "street_view_sim/blocked_sidewalk/sidewalk_01_sim.jpg",
+    "expected_category": "blocked_sidewalk",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/blocked_sidewalk/sidewalk_01.jpg",
+    "notes": "Street View simulation of sidewalk_01.jpg"
+  },
+  {
+    "id": "sidewalk_02",
+    "filename": "images/blocked_sidewalk/sidewalk_02.jpg",
+    "expected_category": "blocked_sidewalk",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Blocked pedestrian path near school"
+  },
+  {
+    "id": "sidewalk_02_sim",
+    "filename": "street_view_sim/blocked_sidewalk/sidewalk_02_sim.jpg",
+    "expected_category": "blocked_sidewalk",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/blocked_sidewalk/sidewalk_02.jpg",
+    "notes": "Street View simulation of sidewalk_02.jpg"
+  },
+  {
+    "id": "sign_01",
+    "filename": "images/damaged_sign/sign_01.jpg",
+    "expected_category": "damaged_sign",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Bent road sign at intersection"
+  },
+  {
+    "id": "sign_01_sim",
+    "filename": "street_view_sim/damaged_sign/sign_01_sim.jpg",
+    "expected_category": "damaged_sign",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/damaged_sign/sign_01.jpg",
+    "notes": "Street View simulation of sign_01.jpg"
+  },
+  {
+    "id": "sign_02",
+    "filename": "images/damaged_sign/sign_02.jpg",
+    "expected_category": "damaged_sign",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Graffitied and damaged street sign"
+  },
+  {
+    "id": "sign_02_sim",
+    "filename": "street_view_sim/damaged_sign/sign_02_sim.jpg",
+    "expected_category": "damaged_sign",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/damaged_sign/sign_02.jpg",
+    "notes": "Street View simulation of sign_02.jpg"
+  },
+  {
+    "id": "other_01",
+    "filename": "images/other/other_01.jpg",
+    "expected_category": "other",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Graffiti on municipal wall"
+  },
+  {
+    "id": "other_01_sim",
+    "filename": "street_view_sim/other/other_01_sim.jpg",
+    "expected_category": "other",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/other/other_01.jpg",
+    "notes": "Street View simulation of other_01.jpg"
+  },
+  {
+    "id": "other_02",
+    "filename": "images/other/other_02.jpg",
+    "expected_category": "other",
+    "expected_civic": true,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Flooded street section"
+  },
+  {
+    "id": "other_02_sim",
+    "filename": "street_view_sim/other/other_02_sim.jpg",
+    "expected_category": "other",
+    "expected_civic": true,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/other/other_02.jpg",
+    "notes": "Street View simulation of other_02.jpg"
+  },
+  {
+    "id": "clean_01",
+    "filename": "images/clean/clean_01.jpg",
+    "expected_category": "other",
+    "expected_civic": false,
+    "difficulty": "easy",
+    "source": "stock",
+    "notes": "Clean street - negative sample"
+  },
+  {
+    "id": "clean_01_sim",
+    "filename": "street_view_sim/clean/clean_01_sim.jpg",
+    "expected_category": "other",
+    "expected_civic": false,
+    "difficulty": "hard",
+    "source": "synthetic_downscale",
+    "source_image": "images/clean/clean_01.jpg",
+    "notes": "Street View simulation of clean_01.jpg"
+  }
+]
