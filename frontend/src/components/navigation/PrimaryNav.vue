@@ -1,223 +1,249 @@
 <template>
-  <header class="site-header">
-    <div class="site-header__glow" aria-hidden="true" />
-    <div class="site-header__inner">
-      <RouterLink class="site-header__brand" to="/" aria-label="KoStreet home">
-        <AppLogo size="sm" />
+  <nav class="dock" aria-label="Primary navigation">
+    <div class="dock__pill">
+
+      <!-- Home -->
+      <RouterLink class="dock__item" to="/" aria-label="Home" exact-active-class="dock__item--active">
+        <span class="dock__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+            <polyline points="9 21 9 12 15 12 15 21"/>
+          </svg>
+        </span>
+        <span class="dock__label">Home</span>
       </RouterLink>
 
-      <nav class="site-header__nav" aria-label="Primary navigation">
-        <RouterLink
-          v-for="item in items"
-          :key="item.to"
-          class="site-header__link"
-          :to="item.to"
-        >
-          <span class="site-header__link-text">{{ item.label }}</span>
-        </RouterLink>
-      </nav>
+      <div class="dock__sep" aria-hidden="true" />
+
+      <!-- Report -->
+      <RouterLink class="dock__item" to="/report" aria-label="Report an issue" active-class="dock__item--active">
+        <span class="dock__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="11" x2="12" y2="17"/>
+            <line x1="9" y1="14" x2="15" y2="14"/>
+          </svg>
+        </span>
+        <span class="dock__label">Report</span>
+      </RouterLink>
+
+      <!-- Dashboard -->
+      <RouterLink class="dock__item" to="/dashboard" aria-label="Command dashboard" active-class="dock__item--active">
+        <span class="dock__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </span>
+        <span class="dock__label">Dashboard</span>
+      </RouterLink>
+
+      <!-- Street Audit -->
+      <RouterLink class="dock__item" to="/audit" aria-label="Street audit" active-class="dock__item--active">
+        <span class="dock__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <line x1="11" y1="8" x2="11" y2="14"/>
+            <line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+        </span>
+        <span class="dock__label">Audit</span>
+      </RouterLink>
+
+      <div class="dock__sep" aria-hidden="true" />
+
+      <!-- Dark mode toggle -->
+      <button
+        class="dock__item dock__item--btn"
+        :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
+        @click="toggleDark"
+      >
+        <span class="dock__icon">
+          <!-- Sun -->
+          <svg v-if="isDark" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="4"/>
+            <line x1="12" y1="20" x2="12" y2="22"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="2" y1="12" x2="4" y2="12"/>
+            <line x1="20" y1="12" x2="22" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon -->
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+        </span>
+      </button>
 
     </div>
-    <div class="site-header__border" aria-hidden="true" />
-  </header>
+  </nav>
 </template>
 
 <script setup lang="ts">
-import AppLogo from '@/components/common/AppLogo.vue';
+import { useDarkMode } from '@/composables/useDarkMode';
 
-const items = [
-  { to: '/', label: 'Home' },
-  { to: '/report', label: 'Report' },
-  { to: '/dashboard', label: 'Dashboard' },
-  { to: '/audit', label: 'Street Audit' },
-];
+const { isDark, toggleDark } = useDarkMode();
 </script>
 
 <style scoped>
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: var(--z-nav);
-  background: rgba(232, 226, 214, 0.78);
-  backdrop-filter: blur(28px) saturate(1.8);
-  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+/* ── Floating dock wrapper ── */
+.dock {
+  position: fixed;
+  bottom: 1.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-nav, 200);
+  pointer-events: none;
 }
 
-/* Subtle top glow */
-.site-header__glow {
-  position: absolute;
-  top: 0;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(47, 93, 80, 0.55) 30%,
-    rgba(217, 144, 47, 0.35) 55%,
-    rgba(47, 93, 80, 0.55) 70%,
-    transparent
-  );
-  animation: gradient-shift 8s ease infinite;
-  background-size: 200% 100%;
-}
-
-/* Animated gradient border bottom */
-.site-header__border {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(47, 93, 80, 0.18) 20%,
-    rgba(217, 144, 47, 0.12) 50%,
-    rgba(63, 110, 140, 0.18) 80%,
-    transparent 100%
-  );
-}
-
-.site-header__inner {
-  position: relative;
+/* ── The pill itself ── */
+.dock__pill {
   display: flex;
-  gap: var(--space-4);
   align-items: center;
-  justify-content: space-between;
-  max-width: 1440px;
-  margin-inline: auto;
-  padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
-}
-
-.site-header__brand {
-  flex-shrink: 0;
-  transition: transform var(--motion-fast) var(--ease-out-expo), opacity var(--motion-fast) ease;
-}
-
-.site-header__brand:hover {
-  transform: scale(1.04);
-  opacity: 0.85;
-}
-
-.site-header__nav {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  gap: 0.15rem;
-  justify-content: center;
-}
-
-.site-header__link {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.95rem;
-  border-radius: var(--radius-pill);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: 850;
-  letter-spacing: 0.005em;
-  transition:
-    color var(--motion-fast) ease,
-    background var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease;
-}
-
-.site-header__link:hover {
-  color: var(--text-primary);
-  background: rgba(47, 93, 80, 0.09);
-}
-
-/* Active = filled green pill */
-.site-header__link.router-link-active {
-  color: #fff;
-  background: var(--color-municipal-green);
-  box-shadow:
-    0 0 0 3px rgba(47, 93, 80, 0.18),
-    0 4px 18px rgba(47, 93, 80, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.site-header__link.router-link-active:hover {
-  background: #244c42;
-  box-shadow:
-    0 0 0 3px rgba(47, 93, 80, 0.22),
-    0 6px 22px rgba(47, 93, 80, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-/* Demo toggle */
-.site-header__demo {
-  display: inline-flex;
-  gap: 0.4rem;
-  flex-shrink: 0;
-  align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.9rem;
+  gap: 0.25rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(255, 253, 247, 0.72);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
   border: 1px solid rgba(23, 33, 26, 0.1);
-  border-radius: var(--radius-pill);
-  color: var(--text-secondary);
-  background: rgba(255, 253, 247, 0.45);
-  font-size: var(--text-sm);
-  font-weight: 850;
+  box-shadow:
+    0 8px 32px rgba(23, 33, 26, 0.12),
+    0 2px 8px rgba(23, 33, 26, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  pointer-events: auto;
+}
+
+/* ── Each nav item ── */
+.dock__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: rgba(30, 40, 35, 0.55);
+  text-decoration: none;
   cursor: pointer;
   transition:
-    color var(--motion-fast) ease,
-    background var(--motion-fast) ease,
-    border-color var(--motion-fast) ease,
-    box-shadow var(--motion-fast) ease;
+    color 180ms ease,
+    background 180ms ease,
+    transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 180ms ease;
 }
 
-.site-header__demo:hover {
-  color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.72);
-  box-shadow: 0 4px 16px rgba(23, 33, 26, 0.08);
+.dock__item:hover {
+  color: rgba(30, 40, 35, 0.9);
+  background: rgba(47, 93, 80, 0.09);
+  transform: translateY(-3px) scale(1.08);
 }
 
-.site-header__demo--active {
-  color: var(--color-municipal-green);
-  background: rgba(47, 93, 80, 0.1);
-  border-color: rgba(47, 93, 80, 0.3);
-  box-shadow: 0 0 0 3px rgba(47, 93, 80, 0.1);
+/* Active / current route */
+.dock__item--active {
+  color: #2f5d50 !important;
+  background: rgba(47, 93, 80, 0.13) !important;
+  box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.18);
 }
 
-.site-header__demo-dot {
-  display: block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(58, 63, 59, 0.3);
-  transition: background var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+.dock__item--active .dock__icon {
+  filter: drop-shadow(0 0 6px rgba(47, 93, 80, 0.45));
 }
 
-.site-header__demo--active .site-header__demo-dot {
-  background: var(--color-municipal-green);
-  box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.25);
-  animation: glow-pulse 2.4s ease-in-out infinite;
+/* Button variant (dark-mode toggle) */
+.dock__item--btn {
+  appearance: none;
+  font: inherit;
 }
 
-@media (max-width: 760px) {
-  .site-header__inner {
-    flex-wrap: wrap;
-    gap: var(--space-2);
+/* Icon wrapper */
+.dock__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: filter 180ms ease;
+}
+
+/* Tooltip label (appears on hover) */
+.dock__label {
+  position: absolute;
+  bottom: calc(100% + 0.55rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(23, 33, 26, 0.82);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+/* Arrow tip */
+.dock__label::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(23, 33, 26, 0.82);
+}
+
+.dock__item:hover .dock__label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Separator */
+.dock__sep {
+  width: 1px;
+  height: 1.5rem;
+  margin-inline: 0.25rem;
+  background: rgba(23, 33, 26, 0.1);
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+/* Entrance animation */
+.dock {
+  animation: dock-rise 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes dock-rise {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(2rem);
   }
-
-  .site-header__nav {
-    order: 3;
-    justify-content: flex-start;
-    width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
+}
 
-  .site-header__nav::-webkit-scrollbar {
-    display: none;
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .dock {
+    animation: none;
   }
-
-  .site-header__link {
-    white-space: nowrap;
+  .dock__item:hover {
+    transform: none;
   }
 }
 </style>

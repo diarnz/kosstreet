@@ -28,6 +28,7 @@ body {
   margin: 0;
   color: var(--text-primary);
   background: var(--surface-app);
+  transition: background 320ms ease, color 200ms ease;
 }
 
 a {

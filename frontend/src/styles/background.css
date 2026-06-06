@@ -130,3 +130,482 @@
   );
   pointer-events: none;
 }
+
+/* ─── Dark mode overrides ─── */
+html.dark .glass-panel {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(22, 32, 27, 0.72);
+  box-shadow:
+    0 4px 28px rgba(0, 0, 0, 0.28),
+    0 1px 4px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html.dark .glass-panel--elevated {
+  background: rgba(26, 38, 32, 0.82);
+  box-shadow:
+    0 20px 56px rgba(0, 0, 0, 0.42),
+    0 4px 16px rgba(0, 0, 0, 0.28),
+    0 1px 3px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html.dark .glass-panel--interactive:hover {
+  border-color: rgba(47, 140, 110, 0.3);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    0 4px 16px rgba(47, 93, 80, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.dark .cinematic-card {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(20, 30, 25, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(47, 93, 80, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html.dark .cinematic-card::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(255, 255, 255, 0.06) 60%,
+    transparent
+  );
+}
+
+/* ─── Dock dark mode ─── */
+html.dark .dock__pill {
+  background: rgba(18, 26, 22, 0.88);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+html.dark .dock__item {
+  color: rgba(220, 215, 200, 0.52);
+}
+
+html.dark .dock__item:hover {
+  color: rgba(232, 228, 218, 0.92);
+  background: rgba(47, 93, 80, 0.15);
+}
+
+html.dark .dock__item--active {
+  color: #6dbda3 !important;
+  background: rgba(47, 93, 80, 0.22) !important;
+  box-shadow: 0 0 0 2px rgba(47, 93, 80, 0.28);
+}
+
+html.dark .dock__item--active .dock__icon {
+  filter: drop-shadow(0 0 8px rgba(47, 180, 140, 0.4));
+}
+
+html.dark .dock__sep {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ─── HomePage hero dark mode ─── */
+html.dark .home-hero__actions {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(18, 26, 22, 0.6);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html.dark .home-hero__stat-sep {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark .home-hero__ring--1 {
+  border-color: rgba(47, 140, 110, 0.35);
+  box-shadow: 0 0 18px rgba(47, 140, 110, 0.12), inset 0 0 18px rgba(47, 140, 110, 0.07);
+}
+
+html.dark .home-hero__ring--2 { border-color: rgba(47, 140, 110, 0.22); }
+html.dark .home-hero__ring--3 { border-color: rgba(47, 140, 110, 0.12); }
+html.dark .home-hero__ring--4 { border-color: rgba(47, 140, 110, 0.07); }
+
+html.dark .home-hero__glow {
+  background: radial-gradient(circle, rgba(47, 140, 110, 0.16) 0%, transparent 65%);
+}
+
+/* ─── HomePage deck dark mode ─── */
+html.dark .home-deck__tile {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(20, 30, 25, 0.65);
+}
+
+html.dark .home-deck__tile:hover {
+  background: rgba(26, 38, 32, 0.88);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 20px 48px rgba(0, 0, 0, 0.4),
+    0 4px 12px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+html.dark .home-deck__pipeline {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(18, 26, 22, 0.5);
+}
+
+/* ─── AppShell orbs dark mode ─── */
+html.dark .app-shell__orb--1 {
+  background: radial-gradient(circle, rgba(47, 140, 110, 0.28) 0%, transparent 68%);
+}
+html.dark .app-shell__orb--2 {
+  background: radial-gradient(circle, rgba(180, 110, 20, 0.18) 0%, transparent 68%);
+}
+html.dark .app-shell__orb--3 {
+  background: radial-gradient(circle, rgba(40, 80, 110, 0.18) 0%, transparent 68%);
+}
+html.dark .app-shell__orb--4 {
+  background: radial-gradient(circle, rgba(47, 93, 80, 0.14) 0%, transparent 68%);
+}
+html.dark .app-shell__orb--5 {
+  background: radial-gradient(circle, rgba(160, 50, 40, 0.08) 0%, transparent 68%);
+}
+html.dark .app-shell__grid {
+  background-image: radial-gradient(circle, rgba(180, 210, 195, 0.14) 1px, transparent 1px);
+  opacity: 0.18;
+}
+html.dark .app-shell__aurora {
+  opacity: 0.07;
+  background: conic-gradient(
+    from 220deg at 45% 38%,
+    rgba(47, 140, 110, 1),
+    rgba(180, 110, 20, 0.5),
+    rgba(40, 80, 120, 0.7),
+    rgba(47, 93, 80, 0.3),
+    rgba(47, 140, 110, 1)
+  );
+}
+
+/* ─── Cards & Containers dark mode ─── */
+html.dark .app-card {
+  background: var(--surface-panel);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .app-card--command {
+  background: var(--gradient-command);
+}
+
+html.dark .app-card--muted {
+  background: var(--surface-muted);
+}
+
+html.dark .app-card--inset {
+  background: var(--surface-inset);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Inputs & Textareas dark mode ─── */
+html.dark .app-input,
+html.dark .app-textarea {
+  background: var(--surface-inset) !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+html.dark .app-input::placeholder,
+html.dark .app-textarea::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.6 !important;
+}
+
+html.dark .app-input:disabled,
+html.dark .app-textarea:disabled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ─── Photo Capture Field dark mode ─── */
+html.dark .photo-field__dropzone {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(217, 144, 47, 0.12), transparent 55%),
+    rgba(20, 28, 23, 0.72) !important;
+  border-color: rgba(47, 140, 110, 0.35) !important;
+}
+
+html.dark .photo-field__dropzone:hover {
+  border-color: rgba(47, 140, 110, 0.55) !important;
+}
+
+html.dark .photo-field__camera {
+  background: rgba(47, 93, 80, 0.35) !important;
+  color: #6dbda3 !important;
+}
+
+/* ─── Step Rail / Progress dark mode ─── */
+html.dark .step-rail__dot {
+  background: var(--surface-panel) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+html.dark .step-rail__connector {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .step-rail__item--complete .step-rail__dot {
+  background: rgba(47, 93, 80, 0.35) !important;
+  border-color: rgba(47, 140, 110, 0.45) !important;
+  color: #6dbda3 !important;
+}
+
+/* ─── Location Search Field dark mode ─── */
+html.dark .location-search__shell {
+  background: var(--surface-inset) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .location-search__shell:focus-within {
+  border-color: rgba(47, 140, 110, 0.45) !important;
+  box-shadow:
+    0 1px 6px rgba(0, 0, 0, 0.3),
+    0 0 0 3px rgba(47, 140, 110, 0.15) !important;
+}
+
+html.dark .location-search__map-btn {
+  background: rgba(47, 93, 80, 0.25) !important;
+  color: #6dbda3 !important;
+}
+
+html.dark .location-search__map-btn:hover:not(:disabled) {
+  background: rgba(47, 93, 80, 0.35) !important;
+}
+
+html.dark .location-search__host input::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.6 !important;
+}
+
+/* ─── Metrics container dark mode ─── */
+html.dark .audit-metrics,
+html.dark .dashboard-metrics {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-metrics__sep,
+html.dark .dashboard-metrics__sep {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ─── Filter Bar dark mode ─── */
+html.dark .filter-bar {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .filter-bar__search {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .filter-bar__search:focus {
+  background: rgba(47, 140, 110, 0.15) !important;
+}
+
+html.dark .filter-bar__divider {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .filter-bar__select:hover,
+html.dark .filter-bar__select:focus {
+  background: rgba(47, 140, 110, 0.15) !important;
+}
+
+/* ─── Street View Panel components dark mode ─── */
+html.dark .street-view-panel__notice {
+  background: var(--surface-inset) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .street-view-summary {
+  background: var(--surface-panel) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .street-view-fallback {
+  background: var(--gradient-command) !important;
+}
+
+/* ─── Audit Run Queue dark mode ─── */
+html.dark .audit-run-queue__item {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-run-queue__item:hover {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .audit-run-queue__item--selected {
+  border-color: rgba(140, 108, 58, 0.35) !important;
+  background: rgba(47, 68, 57, 0.45) !important;
+}
+
+html.dark .audit-run-queue__view {
+  border-left-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-run-queue__view:hover {
+  background: rgba(47, 93, 80, 0.15) !important;
+  color: #6dbda3 !important;
+}
+
+html.dark .audit-run-queue__progress {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ─── Audit Run Detail Tabs & Chips dark mode ─── */
+html.dark .audit-detail__tab,
+html.dark .audit-detail__chip {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-detail__tab:hover,
+html.dark .audit-detail__chip:hover {
+  background: rgba(26, 38, 32, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+html.dark .audit-detail__tab--active,
+html.dark .audit-detail__chip--active {
+  background: rgba(47, 93, 80, 0.18) !important;
+  border-color: rgba(47, 93, 80, 0.45) !important;
+}
+
+html.dark .audit-detail__review-stats {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-detail__stat-sep {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .audit-detail__note {
+  background: var(--surface-inset) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ─── Scan Timeline dark mode ─── */
+html.dark .audit-scan-timeline__dot {
+  background: rgba(20, 28, 23, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+html.dark .audit-scan-timeline__point:hover {
+  background: rgba(47, 93, 80, 0.15) !important;
+}
+
+html.dark .audit-scan-timeline__point--selected {
+  background: rgba(47, 93, 80, 0.22) !important;
+}
+
+/* ─── Report Queue dark mode ─── */
+html.dark .report-queue__count {
+  background: rgba(47, 140, 110, 0.22) !important;
+}
+
+html.dark .report-queue__item {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .report-queue__item:first-child {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .report-queue__item:hover {
+  background: rgba(47, 93, 80, 0.1) !important;
+}
+
+html.dark .report-queue__item--selected {
+  background: rgba(47, 93, 80, 0.16) !important;
+}
+
+/* ─── Municipal Status Options dark mode ─── */
+html.dark .status-actions__option {
+  background: color-mix(in srgb, var(--c) 12%, rgba(20, 28, 23, 0.6)) !important;
+  border-color: color-mix(in srgb, var(--c) 30%, transparent) !important;
+}
+
+html.dark .status-actions__option:hover {
+  background: color-mix(in srgb, var(--c) 20%, rgba(20, 28, 23, 0.9)) !important;
+  border-color: color-mix(in srgb, var(--c) 55%, transparent) !important;
+}
+
+html.dark .status-actions__option--selected {
+  background: var(--c) !important;
+  border-color: var(--c) !important;
+}
+
+/* ─── Severity Legends dark mode ─── */
+html.dark .severity-legend,
+html.dark .severity-legend__item {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .severity-legend--neon .severity-legend__item {
+  background: rgba(20, 30, 25, 0.65) !important;
+}
+
+/* ─── Citizen Report Status Details Grid dark mode ─── */
+html.dark .status-detail-grid > div {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ─── Audit Suggestion Card details dark mode ─── */
+html.dark .audit-suggestion-card__locate {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-suggestion-card__locate:hover {
+  background: rgba(47, 93, 80, 0.15) !important;
+  border-color: rgba(47, 93, 80, 0.45) !important;
+  color: #6dbda3 !important;
+}
+
+html.dark .audit-suggestion-card__meta {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-suggestion-card__confidence-track {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .audit-suggestion-card__review {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-suggestion-card__segment {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .audit-suggestion-card__seg-btn {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-right-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .audit-suggestion-card__seg-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .audit-suggestion-card__note {
+  background: var(--surface-inset) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+

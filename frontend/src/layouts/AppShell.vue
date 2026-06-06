@@ -46,10 +46,11 @@ withDefaults(
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: 1fr;
   min-height: 100vh;
   overflow-x: hidden;
-  background: #e8e2d6;
+  background: var(--surface-app);
+  transition: background 320ms ease;
 }
 
 /* ─── Background layer ─── */
@@ -197,7 +198,8 @@ withDefaults(
   display: grid;
   align-content: start;
   gap: var(--space-4);
-  padding: var(--shell-pad-y) var(--shell-pad-x) clamp(2rem, 5vw, 3rem);
+  /* Extra bottom padding keeps content clear of the floating dock */
+  padding: var(--shell-pad-y) var(--shell-pad-x) clamp(5rem, 8vw, 7rem);
 }
 
 .app-shell__container {
