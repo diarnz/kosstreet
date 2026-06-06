@@ -10,7 +10,9 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.db.engine import AsyncSessionLocal
 from app.seeds.demo import seed_demo_data
+from app.storage.factory import get_file_storage
 from app.storage.local import migrate_legacy_upload_dirs
+from app.storage.supabase import SupabaseStorage, migrate_local_report_images
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,13 @@ async def lifespan(app: FastAPI):
     moved = migrate_legacy_upload_dirs(UPLOAD_DIR)
     if moved:
         logger.info("Migrated %s report image(s) into %s", moved, UPLOAD_DIR)
+
+    storage = get_file_storage()
+    if isinstance(storage, SupabaseStorage):
+        migrated = migrate_local_report_images(storage)
+        if migrated:
+            logger.info("Uploaded %s local report image(s) to Supabase storage", migrated)
+        logger.info("Report images served from Supabase bucket %s", settings.supabase_storage_bucket)
 
     async with AsyncSessionLocal() as db:
         await seed_demo_data(db)

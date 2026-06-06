@@ -1,11 +1,14 @@
 from app.models.report import Report
 from app.schemas.report import DetectionRegion, ReportDetail, ReportSummary
+from app.storage.factory import get_file_storage
 
 
 def report_image_url(report: Report) -> str | None:
     if not report.image_path:
         return None
-    return f"/uploads/{report.image_path}"
+    if report.image_path.startswith(("http://", "https://")):
+        return report.image_path
+    return get_file_storage().url_for(report.image_path)
 
 
 def report_detection_regions(report: Report) -> list[DetectionRegion]:

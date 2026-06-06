@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -35,9 +36,18 @@ class Settings(BaseSettings):
         alias="KOSTREET_DATABASE_URL_SYNC",
     )
 
-    # Storage
+    # Storage — local fallback when Supabase Storage is not configured
     upload_dir: str = "backend/uploads"
     max_upload_bytes: int = 10_485_760  # 10 MB
+    supabase_url: str = Field(default="", alias="KOSTREET_SUPABASE_URL")
+    supabase_service_role_key: str = Field(
+        default="",
+        alias="KOSTREET_SUPABASE_SERVICE_ROLE_KEY",
+    )
+    supabase_storage_bucket: str = Field(
+        default="report-images",
+        alias="KOSTREET_SUPABASE_STORAGE_BUCKET",
+    )
 
     # AI / OpenRouter
     ai_openrouter_api_key: str = Field(default="", alias="KOSTREET_AI_OPENROUTER_API_KEY")
@@ -74,6 +84,21 @@ class Settings(BaseSettings):
         if path.is_absolute():
             return path
         return PROJECT_ROOT / path
+
+    @property
+    def resolved_supabase_url(self) -> str:
+        explicit = self.supabase_url.strip()
+        if explicit:
+            return explicit.rstrip("/")
+
+        match = re.search(r"postgres\.([a-z0-9]+)", self.database_url)
+        if match:
+            return f"https://{match.group(1)}.supabase.co"
+        return ""
+
+    @property
+    def supabase_storage_enabled(self) -> bool:
+        return bool(self.resolved_supabase_url and self.supabase_service_role_key.strip())
 
 
 @lru_cache

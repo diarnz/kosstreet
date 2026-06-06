@@ -32,6 +32,9 @@ GET /api/v1/reports
 POST /api/v1/reports
 ```
 
+Report photos are stored in Supabase Storage when `KOSTREET_SUPABASE_SERVICE_ROLE_KEY` is set.
+Responses include `image_url` as a public HTTPS URL. See `docs/supabase-storage-setup.md`.
+
 Report categories:
 
 - `pothole`

@@ -9,7 +9,7 @@ from app.models.report import Report
 from app.repositories.report_repository import ReportRepository
 from app.schemas.report import ImageAnalysisResult, ReportAdminUpdate, ReportCreate, ReportStatusUpdate
 from app.services.ai_service import AIService
-from app.storage.local import LocalFileStorage
+from app.storage.factory import get_file_storage
 
 DEPARTMENT_MAP: dict[IssueCategory, str] = {
     IssueCategory.pothole: "Roads / Public Works",
@@ -33,7 +33,7 @@ VALID_TRANSITIONS: dict[TicketStatus, set[TicketStatus]] = {
 class ReportService:
     def __init__(self, db: AsyncSession) -> None:
         self.repository = ReportRepository(db)
-        self.storage = LocalFileStorage(settings.upload_path)
+        self.storage = get_file_storage()
         self.ai_service = AIService(settings)
 
     async def list_reports(
