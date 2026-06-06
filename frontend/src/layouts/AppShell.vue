@@ -212,6 +212,26 @@ withDefaults(
 .app-shell__container--wide    { max-width: 1440px; }
 .app-shell__container--full    { max-width: none; }
 
+@media (max-width: 640px) {
+  .app-shell {
+    --shell-pad-x: max(0.75rem, env(safe-area-inset-left, 0px));
+    --shell-pad-y: max(0.75rem, env(safe-area-inset-top, 0px));
+  }
+
+  .app-shell__main {
+    gap: var(--space-3);
+    padding:
+      var(--shell-pad-y)
+      max(0.75rem, env(safe-area-inset-right, 0px))
+      calc(4.5rem + env(safe-area-inset-bottom, 0px))
+      max(0.75rem, env(safe-area-inset-left, 0px));
+  }
+
+  .app-shell__orb {
+    filter: blur(60px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-shell__orb,
   .app-shell__aurora,

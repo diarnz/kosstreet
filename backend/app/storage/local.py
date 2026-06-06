@@ -1,3 +1,4 @@
+import mimetypes
 import shutil
 import uuid
 from pathlib import Path
@@ -46,6 +47,14 @@ class LocalFileStorage:
         suffix = Path(file.filename or "upload").suffix.lower() or ".jpg"
         contents = await file.read()
         return self.save_bytes(contents, suffix=suffix)
+
+    def read_bytes(self, path: str) -> tuple[bytes, str]:
+        dest = self.base_path / path
+        if not dest.is_file():
+            raise FileNotFoundError(path)
+        suffix = dest.suffix.lower() or ".jpg"
+        content_type = mimetypes.types_map.get(suffix, "application/octet-stream")
+        return dest.read_bytes(), content_type
 
     def url_for(self, path: str) -> str:
         return f"/uploads/{path}"

@@ -15,7 +15,7 @@ from app.models.enums import (
 
 
 class AuditRunCreate(BaseModel):
-    municipality: str = Field(default="Prishtina", min_length=1, max_length=200)
+    municipality: str = Field(default="Kosovo", min_length=1, max_length=200)
     route_name: str | None = Field(default=None, min_length=1, max_length=200)
     latitude: float | None = Field(default=None, ge=-90, le=90)
     longitude: float | None = Field(default=None, ge=-180, le=180)

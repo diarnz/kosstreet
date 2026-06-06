@@ -182,4 +182,32 @@ defineEmits<{
 .step-rail__item--clickable:hover .step-rail__dot {
   transform: scale(1.04);
 }
+
+@media (max-width: 640px) {
+  .step-rail__item {
+    min-width: 3.5rem;
+  }
+
+  .step-rail__dot {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.68rem;
+  }
+
+  .step-rail__dot svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .step-rail__label {
+    font-size: 0.6rem;
+    letter-spacing: 0.03em;
+  }
+
+  .step-rail__connector {
+    top: 0.875rem;
+    left: calc(50% + 0.875rem);
+    width: calc(100% - 1.75rem);
+  }
+}
 </style>

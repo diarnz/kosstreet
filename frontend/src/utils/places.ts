@@ -1,4 +1,4 @@
-import { KOSOVO_BOUNDS, PRIZREN_VIEWPORT } from '@/utils/map';
+import { KOSOVO_BOUNDS, KOSOVO_DEFAULT_VIEWPORT } from '@/utils/map';
 import { loadGooglePlaces } from '@/utils/googleMaps';
 
 export interface PlaceSelection {
@@ -12,10 +12,10 @@ export function getKosovoPlaceAutocompleteOptions(): google.maps.places.PlaceAut
     includedRegionCodes: ['XK'],
     locationBias: {
       center: {
-        lat: PRIZREN_VIEWPORT.center.latitude,
-        lng: PRIZREN_VIEWPORT.center.longitude,
+        lat: KOSOVO_DEFAULT_VIEWPORT.center.latitude,
+        lng: KOSOVO_DEFAULT_VIEWPORT.center.longitude,
       },
-      radius: 12000,
+      radius: 65000,
     },
     requestedRegion: 'XK',
     noInputIcon: true,
@@ -35,10 +35,10 @@ export function getKosovoAutocompleteOptions(): google.maps.places.AutocompleteO
 export function getPlacesMapOptions(): google.maps.MapOptions {
   return {
     center: {
-      lat: PRIZREN_VIEWPORT.center.latitude,
-      lng: PRIZREN_VIEWPORT.center.longitude,
+      lat: KOSOVO_DEFAULT_VIEWPORT.center.latitude,
+      lng: KOSOVO_DEFAULT_VIEWPORT.center.longitude,
     },
-    zoom: PRIZREN_VIEWPORT.zoom,
+    zoom: 9,
     restriction: {
       latLngBounds: KOSOVO_BOUNDS,
       strictBounds: false,

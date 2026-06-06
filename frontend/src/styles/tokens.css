@@ -133,7 +133,10 @@
   --border-strong: 1px solid rgba(23, 33, 26, 0.22);
 
   --z-nav: 20;
+  --z-deck: 1;
+  --z-command-bar: 40;
   --z-overlay: 50;
+  --z-dropdown: 120;
 
   --motion-fast: 160ms;
   --motion-base: 240ms;

@@ -6,6 +6,10 @@
         <h1>Municipal dashboard</h1>
         <p class="command-header__sub">Real-time triage across Kosovo</p>
       </div>
+      <div class="command-header__actions">
+        <DashboardMetrics :metrics="reportsStore.metrics" />
+        <NotificationsPopover scope="dashboard" />
+      </div>
     </header>
 
     <GlassPanel v-if="reportsStore.error" label="Error" class="animate-fade-in">
@@ -13,9 +17,8 @@
       <AppButton variant="secondary" size="sm" @click="reportsStore.fetchReports">Retry</AppButton>
     </GlassPanel>
 
-    <DashboardMetrics class="animate-stagger" :metrics="reportsStore.metrics" />
-
     <DashboardFilters
+      class="page-command-bar"
       :filters="reportsStore.filters"
       @clear="reportsStore.clearFilters"
       @update:category="reportsStore.setCategory"
@@ -43,27 +46,12 @@
             :is-detail-loading="reportsStore.selectedDetailIsLoading"
             :is-updating-status="reportsStore.isUpdatingStatus"
             :is-demo-data="reportsStore.usingDemoReports"
+            :photo-evidence="selectedReportPhoto"
             :report="reportsStore.selectedReport"
             :report-detail="reportsStore.selectedReportDetail"
             :status-update-error="reportsStore.statusUpdateError"
             @retry-detail="fetchSelectedReportDetail"
             @update-status="reportsStore.updateSelectedReportStatus"
-          />
-        </GlassPanel>
-
-        <GlassPanel v-if="selectedReportPhoto" label="Photo evidence" elevated padding="sm">
-          <AnalyzedFrameViewer
-            layout="detail"
-            :image-url="selectedReportPhoto.imageUrl"
-            :regions="selectedReportPhoto.regions"
-            :severity="selectedReportPhoto.severity"
-            :category="selectedReportPhoto.category"
-            :description="selectedReportPhoto.description"
-            :confidence="selectedReportPhoto.confidence"
-            :latitude="selectedReportPhoto.latitude"
-            :longitude="selectedReportPhoto.longitude"
-            alt="Citizen report photo with AI detection overlay"
-            aria-label="Selected report photo evidence"
           />
         </GlassPanel>
 
@@ -83,11 +71,11 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue';
 import GlassPanel from '@/components/common/GlassPanel.vue';
+import NotificationsPopover from '@/components/common/NotificationsPopover.vue';
 import DashboardFilters from '@/components/dashboard/DashboardFilters.vue';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics.vue';
 import ReportDetailPanel from '@/components/dashboard/ReportDetailPanel.vue';
 import ReportQueue from '@/components/dashboard/ReportQueue.vue';
-import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import ReportsProblemMap from '@/components/dashboard/ReportsProblemMap.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
 import { useReportsStore } from '@/stores/reports';
@@ -108,7 +96,6 @@ const selectedReportPhoto = computed(() => {
     regions: (report.detection_regions ?? []) as ReportDetectionRegion[],
     severity: (report.severity ?? 'medium') as ReportSeverity,
     category: report.category as IssueCategory,
-    description: report.description ?? null,
     confidence: report.confidence ?? null,
     latitude: report.latitude,
     longitude: report.longitude,
@@ -147,11 +134,13 @@ function fetchSelectedReportDetail() {
 <style scoped>
 .command-header {
   position: relative;
+  z-index: var(--z-command-bar);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   align-items: flex-end;
   justify-content: space-between;
+  min-width: 0;
   padding-bottom: var(--space-4);
   padding-left: var(--space-4);
   border-bottom: 1px solid rgba(23, 33, 26, 0.08);
@@ -191,6 +180,7 @@ function fetchSelectedReportDetail() {
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
+  min-width: 0;
 }
 
 .command-header__sync {
@@ -204,7 +194,16 @@ function fetchSelectedReportDetail() {
   color: var(--color-repair-red);
 }
 
+.page-command-bar {
+  position: relative;
+  z-index: var(--z-command-bar);
+  width: 100%;
+  min-width: 0;
+}
+
 .command-deck {
+  position: relative;
+  z-index: var(--z-deck);
   display: grid;
   grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   gap: var(--space-4);
@@ -212,7 +211,15 @@ function fetchSelectedReportDetail() {
   min-height: 34rem;
 }
 
+.command-deck__queue {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+}
+
 .command-deck__inspector {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: var(--space-4);
   min-width: 0;
@@ -221,6 +228,40 @@ function fetchSelectedReportDetail() {
 @media (max-width: 1080px) {
   .command-deck {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .command-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding-left: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+
+  .command-header h1 {
+    font-size: clamp(1.45rem, 7vw, 1.85rem);
+  }
+
+  .command-header__sub {
+    font-size: var(--text-xs);
+  }
+
+  .command-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .command-header__actions :deep(.notifications-popover) {
+    align-self: flex-end;
+  }
+
+  .command-deck {
+    gap: var(--space-3);
+    min-height: 0;
   }
 }
 </style>

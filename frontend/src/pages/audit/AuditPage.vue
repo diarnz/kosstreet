@@ -6,6 +6,10 @@
         <h1>Street audit</h1>
         <p class="command-header__sub">Scan routes · Review AI · Convert to tickets</p>
       </div>
+      <div class="command-header__actions">
+        <AuditRunMetrics :metrics="auditRunsStore.metrics" />
+        <NotificationsPopover scope="audit" />
+      </div>
     </header>
 
     <GlassPanel v-if="auditRunsStore.error" label="Error" class="animate-fade-in">
@@ -13,61 +17,52 @@
       <AppButton variant="secondary" size="sm" @click="auditRunsStore.fetchRuns">Retry</AppButton>
     </GlassPanel>
 
-    <div class="audit-top animate-fade-up">
-      <AuditRunMetrics :metrics="auditRunsStore.metrics" />
-      <GlassPanel elevated padding="sm" class="audit-top__form">
-        <AuditRunForm
-          :error="auditRunsStore.createError"
-          :is-creating="auditRunsStore.isCreating"
-          @create="auditRunsStore.createRun"
-        />
-      </GlassPanel>
-    </div>
+    <AuditRunForm
+      class="audit-launch animate-fade-up"
+      :error="auditRunsStore.createError"
+      :is-creating="auditRunsStore.isCreating"
+      @create="auditRunsStore.createRun"
+    />
 
     <section class="audit-deck animate-fade-up">
       <GlassPanel padding="sm" class="audit-deck__queue">
-        <AuditRunFilters
-          :filters="auditRunsStore.filters"
-          @clear="auditRunsStore.clearFilters"
-          @update:search="auditRunsStore.setSearch"
-          @update:status="auditRunsStore.setStatus"
-        />
         <AuditRunQueue
           :is-demo-data="auditRunsStore.usingDemoRuns"
           :is-loading="auditRunsStore.isLoading"
           :runs="auditRunsStore.filteredRuns"
           :selected-run-id="auditRunsStore.selectedRunId"
           @select="auditRunsStore.selectRun"
-          @view-street="selectRunForScanner"
         />
       </GlassPanel>
-    </section>
 
-    <section class="audit-detail-section animate-fade-in">
-      <AuditRunDetailPanel
-        :convert-error-by-id="auditSuggestionsStore.convertErrorById"
-        :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
-        :converted-report-by-suggestion-id="auditSuggestionsStore.convertedReportBySuggestionId"
-        :frames="selectedRunFrames"
-        :frames-error="selectedRunFramesError"
-        :frames-loading="selectedRunFramesLoading"
-        :is-demo-data="auditRunsStore.usingDemoRuns"
-        :review-error-by-id="auditSuggestionsStore.reviewErrorById"
-        :review-loading-by-id="auditSuggestionsStore.reviewLoadingById"
-        :run="auditRunsStore.selectedRun"
-        :scan-path="selectedRunScanPath"
-        :scan-path-error="selectedRunScanPathError"
-        :scan-path-loading="selectedRunScanPathLoading"
-        :suggestions="selectedRunSuggestions"
-        :suggestions-error="selectedRunSuggestionsError"
-        :suggestions-loading="selectedRunSuggestionsLoading"
-        @convert-suggestion="auditSuggestionsStore.convertSuggestionToReport"
-        @refresh-frames="refreshSelectedRunFrames"
-        @refresh-scan-path="refreshSelectedRunScanPath"
-        @refresh-suggestions="refreshSelectedRunSuggestions"
-        @review-suggestion="auditSuggestionsStore.reviewSuggestion"
-        @analyzed="handleAnalyzedFrame"
-      />
+      <div class="audit-deck__workspace">
+        <GlassPanel elevated padding="sm">
+          <AuditRunDetailPanel
+            :convert-error-by-id="auditSuggestionsStore.convertErrorById"
+            :convert-loading-by-id="auditSuggestionsStore.convertLoadingById"
+            :converted-report-by-suggestion-id="auditSuggestionsStore.convertedReportBySuggestionId"
+            :frames="selectedRunFrames"
+            :frames-error="selectedRunFramesError"
+            :frames-loading="selectedRunFramesLoading"
+            :is-demo-data="auditRunsStore.usingDemoRuns"
+            :review-error-by-id="auditSuggestionsStore.reviewErrorById"
+            :review-loading-by-id="auditSuggestionsStore.reviewLoadingById"
+            :run="auditRunsStore.selectedRun"
+            :scan-path="selectedRunScanPath"
+            :scan-path-error="selectedRunScanPathError"
+            :scan-path-loading="selectedRunScanPathLoading"
+            :suggestions="selectedRunSuggestions"
+            :suggestions-error="selectedRunSuggestionsError"
+            :suggestions-loading="selectedRunSuggestionsLoading"
+            @convert-suggestion="auditSuggestionsStore.convertSuggestionToReport"
+            @refresh-frames="refreshSelectedRunFrames"
+            @refresh-scan-path="refreshSelectedRunScanPath"
+            @refresh-suggestions="refreshSelectedRunSuggestions"
+            @review-suggestion="auditSuggestionsStore.reviewSuggestion"
+            @analyzed="handleAnalyzedFrame"
+          />
+        </GlassPanel>
+      </div>
     </section>
 
     <DemoAuditSuggestionPanel v-if="uiStore.demoMode" :suggestions="demoAuditSuggestions" />
@@ -76,12 +71,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import AppButton from '@/components/common/AppButton.vue';
 import GlassPanel from '@/components/common/GlassPanel.vue';
 import { listAuditFrames, listAuditScanPath } from '@/api/auditFrames';
 import DemoAuditSuggestionPanel from '@/components/audit/DemoAuditSuggestionPanel.vue';
 import AuditRunDetailPanel from '@/components/audit/AuditRunDetailPanel.vue';
-import AuditRunFilters from '@/components/audit/AuditRunFilters.vue';
 import AuditRunForm from '@/components/audit/AuditRunForm.vue';
+import NotificationsPopover from '@/components/common/NotificationsPopover.vue';
 import AuditRunMetrics from '@/components/audit/AuditRunMetrics.vue';
 import AuditRunQueue from '@/components/audit/AuditRunQueue.vue';
 import DashboardLayout from '@/layouts/DashboardLayout.vue';
@@ -95,7 +91,6 @@ import { useAuditRunsStore } from '@/stores/auditRuns';
 import { useAuditSuggestionsStore } from '@/stores/auditSuggestions';
 import { useUiStore } from '@/stores/ui';
 import type { AuditFrameDetail, AuditFrameSummary, AuditRunSummary, AuditScanPoint } from '@/types/audit';
-import { formatAuditDateTime } from '@/utils/auditFormatting';
 import {
   frameDetailToScanPoint,
   frameDetailToSummary,
@@ -128,10 +123,6 @@ const selectedRunFramesLoading = ref(false);
 const selectedRunScanPathLoading = ref(false);
 const selectedRunFramesError = ref<string | null>(null);
 const selectedRunScanPathError = ref<string | null>(null);
-
-function selectRunForScanner(run: AuditRunSummary) {
-  auditRunsStore.selectRun(run.id);
-}
 
 onMounted(() => {
   void auditRunsStore.fetchRuns();
@@ -280,11 +271,13 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
 <style scoped>
 .command-header {
   position: relative;
+  z-index: var(--z-command-bar);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
   align-items: flex-end;
   justify-content: space-between;
+  min-width: 0;
   padding-bottom: var(--space-4);
   padding-left: var(--space-4);
   border-bottom: 1px solid rgba(23, 33, 26, 0.08);
@@ -324,12 +317,7 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-}
-
-.command-header__sync {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 750;
+  min-width: 0;
 }
 
 .command-error {
@@ -337,38 +325,77 @@ function handleAnalyzedFrame(frame: AuditFrameDetail) {
   color: var(--color-repair-red);
 }
 
-.audit-top {
-  display: flex;
-  gap: var(--space-4);
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.audit-top__form {
-  flex: 1;
+.audit-launch {
+  position: relative;
+  z-index: var(--z-command-bar);
+  width: 100%;
   min-width: 0;
+  margin-bottom: var(--space-2);
 }
 
 .audit-deck {
+  position: relative;
+  z-index: var(--z-deck);
   display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   gap: var(--space-4);
   align-items: start;
+  min-height: 34rem;
 }
 
 .audit-deck__queue {
+  position: relative;
+  z-index: 2;
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
 }
 
-.audit-detail-section {
-  padding-top: var(--space-2);
-  border-top: 1px solid rgba(23, 33, 26, 0.08);
+.audit-deck__workspace {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (max-width: 1080px) {
+  .audit-deck {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
-  .audit-top {
+  .command-header {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-3);
+    padding-left: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+
+  .command-header h1 {
+    font-size: clamp(1.45rem, 7vw, 1.85rem);
+  }
+
+  .command-header__sub {
+    font-size: var(--text-xs);
+  }
+
+  .command-header__actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .command-header__actions :deep(.notifications-popover) {
+    align-self: flex-end;
+  }
+
+  .audit-deck {
+    gap: var(--space-3);
+    min-height: 0;
   }
 }
 </style>

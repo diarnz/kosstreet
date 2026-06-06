@@ -167,7 +167,7 @@ def _seed_audit_run_and_suggestions(db: AsyncSession) -> None:
     db.add(
         AuditRun(
             id=run_id,
-            municipality=audit_data.get("municipality", "Prishtina"),
+            municipality=audit_data.get("municipality", "Kosovo"),
             route_name=audit_data.get("route_name", "Bill Clinton Boulevard Audit"),
             notes="Seeded from prepared AI street-audit demo results.",
             status=AuditRunStatus.completed,
@@ -313,7 +313,7 @@ def _load_audit_results() -> dict[str, Any]:
     if not AUDIT_RESULTS_PATH.exists():
         return {
             "route_name": "Bill Clinton Boulevard Audit",
-            "municipality": "Prishtina",
+            "municipality": "Kosovo",
             "scanned_at": datetime.now(timezone.utc).isoformat(),
             "total_frames_analyzed": 0,
             "detections": [],

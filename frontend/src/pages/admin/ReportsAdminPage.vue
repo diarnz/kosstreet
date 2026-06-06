@@ -123,7 +123,7 @@
                 <td>
                   <img
                     v-if="report.image_url"
-                    :src="report.image_url"
+                    :src="resolveApiAssetUrl(report.image_url)"
                     alt="Report photo"
                     class="admin-page__thumb"
                     loading="lazy"
@@ -374,6 +374,7 @@ import {
 } from '@/api/adminReports';
 import type { AuditSuggestion } from '@/types/detection';
 import type { IssueCategory, ReportSummary, TicketStatus } from '@/types/report';
+import { resolveApiAssetUrl } from '@/utils/apiAssets';
 
 type AdminTab = 'reports' | 'audit';
 
@@ -1005,5 +1006,60 @@ label {
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .admin-page {
+    padding:
+      max(var(--space-4), env(safe-area-inset-top, 0px))
+      max(var(--space-3), env(safe-area-inset-right, 0px))
+      calc(var(--space-8) + env(safe-area-inset-bottom, 0px))
+      max(var(--space-3), env(safe-area-inset-left, 0px));
+    gap: var(--space-4);
+  }
+
+  .admin-page__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-page__form-grid,
+  .admin-page__gate-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-page__span-2,
+  .admin-page__actions {
+    grid-column: 1;
+  }
+
+  .admin-page__gate-form {
+    align-items: stretch;
+  }
+
+  .admin-page__tabs {
+    flex-wrap: wrap;
+  }
+
+  .admin-page__run-header {
+    flex-direction: column;
+  }
+
+  .admin-page__run-actions {
+    width: 100%;
+  }
+
+  .admin-page__media-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .admin-page__table {
+    font-size: 0.8rem;
+    min-width: 36rem;
+  }
+
+  .admin-page__desc {
+    max-width: 10rem;
+  }
 }
 </style>

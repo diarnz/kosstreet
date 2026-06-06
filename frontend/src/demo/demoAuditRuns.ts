@@ -3,13 +3,13 @@ import {
   DEMO_AUDIT_RUN_ID,
   DEMO_AUDIT_RUN_LEGACY_ID,
   DEMO_SCAN_POINT_COUNT,
-} from '@/demo/demoAuditScanPath';
+} from '@/demo/demoAuditConstants';
 
 export const demoAuditRuns: AuditRunSummary[] = [
   {
     id: DEMO_AUDIT_RUN_ID,
-    municipality: 'Prizren',
-    route_name: 'Prizren old town corridor demo',
+    municipality: 'Kosovo',
+    route_name: 'Old town corridor demo',
     scan_latitude: 42.2137,
     scan_longitude: 20.7397,
     notes: 'Prepared demo run showing the Street View scanner, severity overlays, and municipal review.',
@@ -20,7 +20,7 @@ export const demoAuditRuns: AuditRunSummary[] = [
   },
   {
     id: DEMO_AUDIT_RUN_LEGACY_ID,
-    municipality: 'Prizren',
+    municipality: 'Kosovo',
     route_name: 'Legacy four-heading corridor (demo)',
     scan_latitude: 42.2137,
     scan_longitude: 20.7397,
@@ -32,8 +32,8 @@ export const demoAuditRuns: AuditRunSummary[] = [
   },
   {
     id: 'demo-audit-run-002',
-    municipality: 'Prizren',
-    route_name: 'Marashi Street demo segment',
+    municipality: 'Kosovo',
+    route_name: 'Market street demo segment',
     scan_latitude: 42.2089,
     scan_longitude: 20.7421,
     notes: 'Queued demo run for explaining backend orchestration and approved imagery handoff.',

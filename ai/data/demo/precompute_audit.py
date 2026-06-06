@@ -22,7 +22,7 @@ DEMO_DIR = pathlib.Path(__file__).parent
 AI_BASE = "http://localhost:8001"
 
 ROUTE_NAME = "Bill Clinton Boulevard Audit"
-MUNICIPALITY = "Prishtina"
+MUNICIPALITY = "Kosovo"
 
 # Reduced demo scan — fast enough to pre-compute, impressive enough to show
 DEMO_WAYPOINTS = [

@@ -14,5 +14,13 @@ import AppShell from './AppShell.vue';
 .dashboard-layout {
   display: grid;
   gap: var(--space-5);
+  overflow: visible;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .dashboard-layout {
+    gap: var(--space-3);
+  }
 }
 </style>

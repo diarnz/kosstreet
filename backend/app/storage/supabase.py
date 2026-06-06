@@ -30,6 +30,26 @@ class SupabaseStorage:
         self._upload(object_key, contents, _content_type_for_suffix(suffix))
         return filename
 
+    def read_bytes(self, path: str) -> tuple[bytes, str]:
+        object_key = self._object_key(path)
+        response = httpx.get(
+            f"{self.base_url}/storage/v1/object/{self.bucket}/{object_key}",
+            headers={
+                "Authorization": f"Bearer {self.service_role_key}",
+                "apikey": self.service_role_key,
+            },
+            timeout=60,
+        )
+        if response.status_code == 404:
+            local_source = self.local_fallback_path / Path(path).name
+            if local_source.is_file():
+                suffix = local_source.suffix.lower() or ".jpg"
+                return local_source.read_bytes(), _content_type_for_suffix(suffix)
+            raise FileNotFoundError(path)
+        response.raise_for_status()
+        content_type = response.headers.get("content-type", _content_type_for_suffix(Path(path).suffix))
+        return response.content, content_type
+
     def url_for(self, path: str) -> str:
         object_key = self._object_key(path)
         return f"{self.base_url}/storage/v1/object/public/{self.bucket}/{object_key}"

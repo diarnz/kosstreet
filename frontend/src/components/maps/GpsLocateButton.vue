@@ -2,6 +2,7 @@
   <button
     class="gps-locate"
     :class="{
+      'gps-locate--compact': compact,
       'gps-locate--loading': isLoading,
       'gps-locate--success': showSuccess,
     }"
@@ -28,9 +29,15 @@
 import { ref } from 'vue';
 import { getCurrentLocation } from '@/composables/useGeolocation';
 
-defineProps<{
-  disabled?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    disabled?: boolean;
+    compact?: boolean;
+  }>(),
+  {
+    compact: false,
+  },
+);
 
 const emit = defineEmits<{
   located: [payload: { latitude: number; longitude: number; accuracy: number; label: string }];
@@ -129,5 +136,31 @@ async function capture() {
 
 .gps-locate__label {
   line-height: 1;
+}
+
+.gps-locate--compact {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+.gps-locate--compact:hover:not(:disabled) {
+  transform: none;
+  background: rgba(47, 93, 80, 0.07);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.gps-locate--compact .gps-locate__label {
+  display: none;
+}
+
+.gps-locate--compact.gps-locate--success {
+  color: #fff;
+  background: var(--color-municipal-green);
 }
 </style>

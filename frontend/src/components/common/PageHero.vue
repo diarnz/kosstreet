@@ -90,4 +90,30 @@ withDefaults(
 .page-hero--center .page-hero__actions {
   justify-content: center;
 }
+
+@media (max-width: 640px) {
+  .page-hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding-bottom: var(--space-4);
+  }
+
+  .page-hero__title {
+    font-size: clamp(1.4rem, 7vw, 1.85rem);
+  }
+
+  .page-hero__description {
+    font-size: var(--text-xs);
+  }
+
+  .page-hero__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .page-hero--center .page-hero__actions {
+    justify-content: center;
+  }
+}
 </style>

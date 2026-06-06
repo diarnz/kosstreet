@@ -237,6 +237,73 @@ const { isDark, toggleDark } = useDarkMode();
   }
 }
 
+@media (max-width: 640px) {
+  .dock {
+    bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    width: auto;
+    max-width: none;
+    transform: none;
+    animation: dock-rise-mobile 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .dock__pill {
+    justify-content: stretch;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.35rem 0.4rem;
+    gap: 0.15rem;
+  }
+
+  .dock__item {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    height: 2.5rem;
+  }
+
+  .dock__item:hover {
+    transform: none;
+  }
+
+  .dock__label {
+    display: none;
+  }
+
+  .dock__sep {
+    display: none;
+  }
+
+  .dock__icon svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+@keyframes dock-rise-mobile {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 380px) {
+  .dock__item {
+    height: 2.35rem;
+  }
+
+  .dock__icon svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .dock {

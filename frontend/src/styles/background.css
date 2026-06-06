@@ -211,16 +211,17 @@ html.dark .dock__sep {
 }
 
 /* ─── HomePage hero dark mode ─── */
-html.dark .home-hero__actions {
+html.dark .home-hero__stat {
   border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(18, 26, 22, 0.6);
+  background: rgba(18, 26, 22, 0.62);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 8px 24px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-html.dark .home-hero__stat-sep {
-  background: rgba(255, 255, 255, 0.15);
+html.dark .home-deck__step-chip {
+  border-color: rgba(255, 255, 255, 0.07);
+  background: rgba(18, 26, 22, 0.45);
 }
 
 html.dark .home-hero__ring--1 {
@@ -387,6 +388,28 @@ html.dark .location-search__host input::placeholder {
   opacity: 0.6 !important;
 }
 
+html.dark .location-search__shell--embedded {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html.dark .location-search__shell--embedded:focus-within {
+  background: rgba(47, 140, 110, 0.15) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html.dark .location-search__shell--embedded .location-search__map-btn {
+  background: transparent !important;
+  color: var(--text-muted) !important;
+}
+
+html.dark .location-search__shell--embedded .location-search__map-btn:hover:not(:disabled) {
+  background: rgba(47, 140, 110, 0.15) !important;
+  color: var(--text-primary) !important;
+}
+
 /* ─── Metrics container dark mode ─── */
 html.dark .audit-metrics,
 html.dark .dashboard-metrics {
@@ -422,6 +445,39 @@ html.dark .filter-bar__select:focus {
   background: rgba(47, 140, 110, 0.15) !important;
 }
 
+/* ─── Notifications popover dark mode ─── */
+html.dark .notifications-popover__trigger {
+  background: rgba(20, 30, 25, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .notifications-popover__trigger:hover,
+html.dark .notifications-popover__trigger[aria-expanded='true'] {
+  background: rgba(47, 140, 110, 0.15) !important;
+  border-color: rgba(47, 140, 110, 0.35) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .notifications-popover__panel {
+  background: rgba(20, 28, 23, 0.96) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark .notifications-popover__panel-head,
+html.dark .notifications-popover__item {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .notifications-popover__item:hover {
+  background: rgba(47, 140, 110, 0.1) !important;
+}
+
+html.dark .notifications-popover__action:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* ─── Street View Panel components dark mode ─── */
 html.dark .street-view-panel__notice {
   background: var(--surface-inset) !important;
@@ -437,66 +493,116 @@ html.dark .street-view-fallback {
   background: var(--gradient-command) !important;
 }
 
-/* ─── Audit Run Queue dark mode ─── */
-html.dark .audit-run-queue__item {
-  background: rgba(20, 30, 25, 0.65) !important;
+/* ─── Audit detail dark mode ─── */
+html.dark .audit-detail__tabs {
+  background: rgba(20, 28, 23, 0.72) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-html.dark .audit-run-queue__item:hover {
-  border-color: rgba(255, 255, 255, 0.15) !important;
+html.dark .audit-detail__tab--active {
+  background: rgba(32, 42, 36, 0.95) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
 }
 
-html.dark .audit-run-queue__item--selected {
-  border-color: rgba(140, 108, 58, 0.35) !important;
-  background: rgba(47, 68, 57, 0.45) !important;
-}
-
-html.dark .audit-run-queue__view {
-  border-left-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-html.dark .audit-run-queue__view:hover {
-  background: rgba(47, 93, 80, 0.15) !important;
-  color: #6dbda3 !important;
-}
-
-html.dark .audit-run-queue__progress {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-/* ─── Audit Run Detail Tabs & Chips dark mode ─── */
-html.dark .audit-detail__tab,
-html.dark .audit-detail__chip {
-  background: rgba(20, 30, 25, 0.65) !important;
+html.dark .audit-detections {
+  background: rgba(20, 28, 23, 0.65) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-html.dark .audit-detail__tab:hover,
-html.dark .audit-detail__chip:hover {
-  background: rgba(26, 38, 32, 0.85) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
+html.dark .audit-detections__card {
+  background: rgba(20, 28, 23, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-html.dark .audit-detail__tab--active,
-html.dark .audit-detail__chip--active {
-  background: rgba(47, 93, 80, 0.18) !important;
+html.dark .audit-detections__card--active {
+  background: rgba(47, 93, 80, 0.2) !important;
   border-color: rgba(47, 93, 80, 0.45) !important;
 }
 
-html.dark .audit-detail__review-stats {
-  background: rgba(255, 255, 255, 0.03) !important;
+html.dark .audit-detections__index {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-detections__refresh:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .audit-inspector {
+  background: rgba(20, 28, 23, 0.65) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-html.dark .audit-detail__stat-sep {
-  background: rgba(255, 255, 255, 0.1) !important;
+html.dark .audit-inspector__pill {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-html.dark .audit-detail__note {
+html.dark .audit-inspector__note {
   background: var(--surface-inset) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-primary) !important;
 }
+
+html.dark .audit-inspector__note::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.85;
+}
+
+html.dark .audit-inspector__choice:not(.audit-inspector__choice--active):not(:hover) {
+  background: color-mix(in srgb, var(--action) 12%, rgba(20, 28, 23, 0.9)) !important;
+}
+
+html.dark .gps-locate {
+  background: rgba(47, 93, 80, 0.14) !important;
+  border-color: rgba(47, 93, 80, 0.35) !important;
+  color: #8fd4b8 !important;
+}
+
+html.dark .gps-locate:hover:not(:disabled) {
+  background: rgba(47, 93, 80, 0.22) !important;
+  border-color: rgba(47, 93, 80, 0.5) !important;
+}
+
+html.dark .gps-locate--compact {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  box-shadow: none !important;
+}
+
+html.dark .gps-locate--compact:hover:not(:disabled) {
+  background: rgba(47, 140, 110, 0.15) !important;
+  color: var(--text-primary) !important;
+}
+
+/* ─── Audit frame browser (Frames tab) dark mode ─── */
+html.dark .audit-frame-browser__card {
+  background: rgba(20, 28, 23, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .audit-frame-browser__card:hover {
+  border-color: rgba(47, 93, 80, 0.4) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28) !important;
+}
+
+html.dark .audit-frame-browser__card-body {
+  background: rgba(14, 20, 16, 0.95) !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark .audit-frame-browser__card-body strong {
+  color: var(--text-primary) !important;
+}
+
+html.dark .audit-frame-browser__confidence {
+  color: rgba(220, 215, 200, 0.82) !important;
+}
+
+html.dark .audit-frame-browser__severity--low { color: #86efac !important; }
+html.dark .audit-frame-browser__severity--medium { color: #fde68a !important; }
+html.dark .audit-frame-browser__severity--high,
+html.dark .audit-frame-browser__severity--critical { color: #fca5a5 !important; }
 
 /* ─── Scan Timeline dark mode ─── */
 html.dark .audit-scan-timeline__dot {
@@ -533,20 +639,14 @@ html.dark .report-queue__item--selected {
   background: rgba(47, 93, 80, 0.16) !important;
 }
 
-/* ─── Municipal Status Options dark mode ─── */
-html.dark .status-actions__option {
-  background: color-mix(in srgb, var(--c) 12%, rgba(20, 28, 23, 0.6)) !important;
-  border-color: color-mix(in srgb, var(--c) 30%, transparent) !important;
+/* ─── Status toolbar dark mode ─── */
+html.dark .status-toolbar__note {
+  background: var(--surface-inset) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-html.dark .status-actions__option:hover {
-  background: color-mix(in srgb, var(--c) 20%, rgba(20, 28, 23, 0.9)) !important;
-  border-color: color-mix(in srgb, var(--c) 55%, transparent) !important;
-}
-
-html.dark .status-actions__option--selected {
-  background: var(--c) !important;
-  border-color: var(--c) !important;
+html.dark .status-toolbar__choice:not(.status-toolbar__choice--active) {
+  background: color-mix(in srgb, var(--action) 10%, rgba(20, 28, 23, 0.85)) !important;
 }
 
 /* ─── Severity Legends dark mode ─── */

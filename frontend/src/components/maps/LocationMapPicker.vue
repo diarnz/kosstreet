@@ -10,9 +10,9 @@
         <header class="location-map-picker__header">
           <div>
             <p class="command-label">Map picker</p>
-            <h2 id="location-map-picker-title">Pick a Street View location in Prizren</h2>
+            <h2 id="location-map-picker-title">Pick a Street View location in Kosovo</h2>
             <p class="location-map-picker__sub">
-              Map opens on Prizren. Blue lines show Street View coverage — tap a covered street to add it to search.
+              Map opens on Kosovo. Blue lines show Street View coverage — tap a covered street to add it to search.
             </p>
           </div>
           <button class="location-map-picker__close" type="button" aria-label="Close map" @click="close">
@@ -20,7 +20,7 @@
           </button>
         </header>
 
-        <div ref="mapElement" class="location-map-picker__map" aria-label="Prizren map" />
+        <div ref="mapElement" class="location-map-picker__map" aria-label="Kosovo map" />
 
         <p v-if="statusMessage" class="location-map-picker__status" :class="{ 'location-map-picker__status--error': isError }">
           {{ statusMessage }}
@@ -37,7 +37,7 @@ import { nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue';
 import type { PlaceSelection } from '@/utils/places';
 import { getKosovoMapPickerOptions, reverseGeocodeCoordinates } from '@/utils/places';
 import { loadGoogleMaps, getGoogleMapsLoadHint } from '@/utils/googleMaps';
-import { PRIZREN_VIEWPORT } from '@/utils/map';
+import { KOSOVO_DEFAULT_VIEWPORT } from '@/utils/map';
 import { snapToStreetViewAtCoordinates } from '@/utils/streetView';
 
 const props = defineProps<{
@@ -118,10 +118,10 @@ async function initMap() {
       instance.setZoom(15);
     } else {
       instance.setCenter({
-        lat: PRIZREN_VIEWPORT.center.latitude,
-        lng: PRIZREN_VIEWPORT.center.longitude,
+        lat: KOSOVO_DEFAULT_VIEWPORT.center.latitude,
+        lng: KOSOVO_DEFAULT_VIEWPORT.center.longitude,
       });
-      instance.setZoom(PRIZREN_VIEWPORT.zoom);
+      instance.setZoom(10);
     }
   } catch (error) {
     statusMessage.value = getGoogleMapsLoadHint(error);
@@ -144,7 +144,7 @@ async function onMapClick(event: google.maps.MapMouseEvent) {
 
   const snapped = await snapToStreetViewAtCoordinates(latLng.lat(), latLng.lng());
   if (!snapped) {
-    statusMessage.value = 'No Street View here. Tap a blue-covered street in Prizren.';
+    statusMessage.value = 'No Street View here. Tap a blue-covered street in Kosovo.';
     isError.value = true;
     return;
   }
@@ -285,8 +285,28 @@ function teardownMap() {
 }
 
 @media (max-width: 640px) {
+  .location-map-picker {
+    padding:
+      max(0.5rem, env(safe-area-inset-top, 0px))
+      max(0.5rem, env(safe-area-inset-right, 0px))
+      max(0.5rem, env(safe-area-inset-bottom, 0px))
+      max(0.5rem, env(safe-area-inset-left, 0px));
+    place-items: stretch;
+  }
+
+  .location-map-picker__dialog {
+    width: 100%;
+    max-height: calc(100dvh - 1rem);
+    padding: var(--space-3);
+  }
+
+  .location-map-picker__header h2 {
+    font-size: 0.95rem;
+  }
+
   .location-map-picker__map {
-    min-height: 22rem;
+    min-height: min(52dvh, 22rem);
+    flex: 1;
   }
 }
 </style>

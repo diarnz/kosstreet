@@ -17,7 +17,7 @@ class AuditRun(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     municipality: Mapped[str] = mapped_column(
-        String(200), nullable=False, default="Prishtina"
+        String(200), nullable=False, default="Kosovo"
     )
     route_name: Mapped[str] = mapped_column(String(200), nullable=False)
     scan_latitude: Mapped[float | None] = mapped_column(Float)

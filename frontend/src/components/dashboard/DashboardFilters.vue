@@ -110,6 +110,8 @@ function onSourceChange(event: Event) {
 
 <style scoped>
 .filter-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -121,13 +123,16 @@ function onSourceChange(event: Event) {
   backdrop-filter: blur(14px);
   width: fit-content;
   max-width: 100%;
+  overflow: visible;
 }
 
 /* Search */
 .filter-bar__search-wrap {
   position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
+  overflow: visible;
 }
 
 .filter-bar__search-icon {
@@ -230,6 +235,49 @@ function onSourceChange(event: Event) {
 
   .filter-bar__search:focus {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .filter-bar__search-wrap {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .filter-bar__search {
+    width: 100%;
+  }
+
+  .filter-bar__divider {
+    display: none;
+  }
+
+  .filter-bar__select {
+    width: 100%;
+    min-width: 0;
+    height: 2.35rem;
+    padding: 0 0.35rem;
+    font-size: 0.68rem;
+    font-weight: 750;
+    text-align: center;
+    text-align-last: center;
+    border-radius: var(--radius-md);
+    background: rgba(23, 33, 26, 0.05);
+  }
+
+  .filter-bar__clear {
+    grid-column: 1 / -1;
+    justify-self: end;
+    width: 2rem;
+    height: 2rem;
   }
 }
 </style>

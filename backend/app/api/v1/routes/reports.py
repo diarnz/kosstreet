@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi import status as http_status
+from fastapi.responses import Response
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -68,6 +69,19 @@ async def create_report(
     payload = await _parse_report_create_payload(request, data)
     report = await service.create_report(payload, image)
     return report_to_summary(report)
+
+
+@router.get("/{report_id}/image")
+async def get_report_image(
+    report_id: UUID,
+    service: ReportService = Depends(get_report_service),
+) -> Response:
+    image_bytes, content_type = await service.get_report_image(report_id)
+    return Response(
+        content=image_bytes,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @router.get("/{report_id}", response_model=ReportDetail)

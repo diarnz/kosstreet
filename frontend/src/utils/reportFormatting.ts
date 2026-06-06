@@ -18,6 +18,15 @@ export const statusLabels: Record<TicketStatus, string> = {
   rejected: 'Rejected',
 };
 
+export const statusShortLabels: Record<TicketStatus, string> = {
+  new: 'New',
+  verified: 'Verify',
+  assigned: 'Assign',
+  in_progress: 'Work',
+  resolved: 'Close',
+  rejected: 'Reject',
+};
+
 export const sourceLabels: Record<ReportSource, string> = {
   citizen: 'Citizen',
   street_audit: 'AI Street Audit',

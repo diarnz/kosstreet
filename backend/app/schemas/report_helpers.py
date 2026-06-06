@@ -1,6 +1,12 @@
+from uuid import UUID
+
+from app.core.config import settings
 from app.models.report import Report
 from app.schemas.report import DetectionRegion, ReportDetail, ReportSummary
-from app.storage.factory import get_file_storage
+
+
+def report_image_proxy_url(report_id: UUID) -> str:
+    return f"{settings.api_v1_prefix}/reports/{report_id}/image"
 
 
 def report_image_url(report: Report) -> str | None:
@@ -8,7 +14,7 @@ def report_image_url(report: Report) -> str | None:
         return None
     if report.image_path.startswith(("http://", "https://")):
         return report.image_path
-    return get_file_storage().url_for(report.image_path)
+    return report_image_proxy_url(report.id)
 
 
 def report_detection_regions(report: Report) -> list[DetectionRegion]:

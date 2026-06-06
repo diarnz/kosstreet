@@ -1,10 +1,13 @@
 import type { AuditFrameDetail, AuditFrameSummary, AuditScanPoint } from '@/types/audit';
 import type { IssueCategory } from '@/types/report';
 import { demoAuditSuggestions } from '@/demo/demoAuditSuggestions';
+import {
+  DEMO_AUDIT_RUN_ID,
+  DEMO_AUDIT_RUN_LEGACY_ID,
+  DEMO_SCAN_POINT_COUNT,
+} from '@/demo/demoAuditConstants';
 
-export const DEMO_AUDIT_RUN_ID = 'demo-audit-run-001';
-export const DEMO_AUDIT_RUN_LEGACY_ID = 'demo-audit-run-legacy';
-export const DEMO_SCAN_POINT_COUNT = 16;
+export { DEMO_AUDIT_RUN_ID, DEMO_AUDIT_RUN_LEGACY_ID, DEMO_SCAN_POINT_COUNT };
 
 const DEMO_HEADINGS = [0, 90, 180, 270] as const;
 

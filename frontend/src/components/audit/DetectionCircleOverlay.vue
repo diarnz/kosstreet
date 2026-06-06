@@ -108,41 +108,51 @@
     <div
       v-if="interactive && activeIndex != null && activeRegion"
       class="detection-overlay__info animate-fade-in"
+      :class="severity ? `detection-overlay__info--${severity}` : null"
       :style="{ '--tone': severityColor, ...infoPanelStyle(activeRegion) }"
       role="dialog"
       aria-label="Detection details"
       @click.stop
     >
-      <div class="detection-overlay__info-accent" :style="{ background: severityColor }" />
+      <span class="detection-overlay__info-pointer" aria-hidden="true" />
 
-      <div class="detection-overlay__info-head">
-        <span class="detection-overlay__info-badge">{{ severityLabel }}</span>
-        <button type="button" class="detection-overlay__info-close" aria-label="Close" @click="activeIndex = null">
-          <svg viewBox="0 0 16 16" fill="none" width="10" height="10" aria-hidden="true">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-          </svg>
-        </button>
-      </div>
+      <div class="detection-overlay__info-shell">
+        <header class="detection-overlay__info-head">
+          <span class="detection-overlay__info-badge">{{ severityLabel }}</span>
+          <button type="button" class="detection-overlay__info-close" aria-label="Close" @click="activeIndex = null">
+            <svg viewBox="0 0 16 16" fill="none" width="11" height="11" aria-hidden="true">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
 
-      <strong class="detection-overlay__info-title">{{ categoryLabel }}</strong>
+        <div class="detection-overlay__info-main">
+          <h3 class="detection-overlay__info-title">{{ categoryLabel }}</h3>
+          <div v-if="confidence != null" class="detection-overlay__info-score" aria-label="Model confidence">
+            <span class="detection-overlay__info-score-value">{{ confidenceLabel }}</span>
+            <span class="detection-overlay__info-score-label">confidence</span>
+          </div>
+        </div>
 
-      <div v-if="confidence != null" class="detection-overlay__info-conf">
-        <div class="detection-overlay__info-conf-track">
+        <div v-if="confidence != null" class="detection-overlay__info-meter" aria-hidden="true">
           <span
-            class="detection-overlay__info-conf-fill"
-            :style="{ width: `${confidence * 100}%`, background: severityColor }"
+            class="detection-overlay__info-meter-fill"
+            :style="{ width: `${confidence * 100}%` }"
           />
         </div>
-        <span class="detection-overlay__info-conf-val">{{ confidenceLabel }}</span>
+
+        <p class="detection-overlay__info-copy">
+          {{ description ?? 'The model flagged an issue in this area of the frame.' }}
+        </p>
+
+        <footer class="detection-overlay__info-foot">
+          <svg class="detection-overlay__info-foot-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6.25" stroke="currentColor" stroke-width="1.2" />
+            <path d="M8 7.2v3.6M8 5.4h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+          </svg>
+          <span>AI-estimated location — approximate, not survey-grade.</span>
+        </footer>
       </div>
-
-      <p class="detection-overlay__info-copy">
-        {{ description ?? 'The model flagged an issue in this area of the frame.' }}
-      </p>
-
-      <p class="detection-overlay__info-note">
-        AI-estimated location — approximate, not survey-grade.
-      </p>
     </div>
   </div>
 </template>
@@ -299,32 +309,45 @@ function clampPercent(value: number, min: number, max: number) {
 
 /* ─── Info popup ─── */
 .detection-overlay__info {
+  --info-bg: rgba(8, 12, 10, 0.92);
+  --info-border: color-mix(in srgb, var(--tone) 32%, rgba(255, 255, 255, 0.1));
+
   position: absolute;
   z-index: 3;
-  display: grid;
-  gap: var(--space-2);
-  width: min(15rem, 74%);
-  border: 1px solid color-mix(in srgb, var(--tone) 45%, rgba(255, 255, 255, 0.08));
-  border-radius: var(--radius-md);
-  background: rgba(4, 6, 10, 0.96);
-  color: #fff;
-  backdrop-filter: blur(16px) saturate(1.4);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--tone) 28%, transparent),
-    0 0 28px color-mix(in srgb, var(--tone) 38%, transparent),
-    0 0 60px color-mix(in srgb, var(--tone) 18%, transparent),
-    0 28px 56px rgba(0, 0, 0, 0.7);
-  transform: translate(-50%, -100%);
+  width: min(16.5rem, 78%);
+  transform: translate(-50%, calc(-100% - 0.65rem));
   pointer-events: all;
-  overflow: hidden;
+  filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.45));
 }
 
-.detection-overlay__info-accent {
-  height: 3px;
-  width: 100%;
-  margin-bottom: calc(var(--space-2) * -1 + 2px);
-  opacity: 0.9;
-  box-shadow: 0 0 10px currentColor;
+.detection-overlay__info-pointer {
+  position: absolute;
+  left: 50%;
+  bottom: -0.35rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-right: 1px solid var(--info-border);
+  border-bottom: 1px solid var(--info-border);
+  background: var(--info-bg);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.detection-overlay__info-shell {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem 0.75rem;
+  border: 1px solid var(--info-border);
+  border-radius: calc(var(--radius-md) + 2px);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--tone) 10%, transparent), transparent 42%),
+    var(--info-bg);
+  color: #fff;
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.22),
+    0 0 24px color-mix(in srgb, var(--tone) 22%, transparent);
 }
 
 .detection-overlay__info-head {
@@ -332,94 +355,153 @@ function clampPercent(value: number, min: number, max: number) {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-3) 0;
 }
 
 .detection-overlay__info-badge {
-  padding: 0.18rem 0.6rem;
-  border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35rem;
+  padding: 0.15rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--tone) 48%, transparent);
   border-radius: 999px;
-  background: color-mix(in srgb, var(--tone) 22%, transparent);
-  color: color-mix(in srgb, var(--tone) 90%, #fff);
-  font-size: 0.62rem;
+  background: color-mix(in srgb, var(--tone) 18%, rgba(255, 255, 255, 0.04));
+  color: color-mix(in srgb, var(--tone) 82%, #fff);
+  font-size: 0.58rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
 .detection-overlay__info-close {
   display: grid;
   place-items: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.62);
   cursor: pointer;
-  transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+  transition:
+    background var(--motion-fast) ease,
+    color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
   flex-shrink: 0;
 }
 
 .detection-overlay__info-close:hover {
-  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
   color: #fff;
+}
+
+.detection-overlay__info-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
 }
 
 .detection-overlay__info-title {
-  padding: 0 var(--space-3);
-  font-size: 1rem;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
   font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
   color: #fff;
 }
 
-.detection-overlay__info-conf {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0 var(--space-3);
+.detection-overlay__info-score {
+  display: grid;
+  justify-items: end;
+  gap: 0.05rem;
+  flex-shrink: 0;
+  padding-left: 0.35rem;
 }
 
-.detection-overlay__info-conf-track {
-  flex: 1;
-  height: 3px;
+.detection-overlay__info-score-value {
+  font-size: 0.95rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: color-mix(in srgb, var(--tone) 75%, #fff);
+}
+
+.detection-overlay__info-score-label {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detection-overlay__info-meter {
+  height: 0.22rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
-.detection-overlay__info-conf-fill {
+.detection-overlay__info-meter-fill {
   display: block;
   height: 100%;
-  border-radius: 999px;
-  box-shadow: 0 0 6px currentColor;
-}
-
-.detection-overlay__info-conf-val {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  flex-shrink: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--tone) 70%, #fff),
+    var(--tone)
+  );
+  box-shadow: 0 0 10px color-mix(in srgb, var(--tone) 55%, transparent);
 }
 
 .detection-overlay__info-copy {
   margin: 0;
-  padding: 0 var(--space-3);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: var(--text-xs);
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.68rem;
   line-height: 1.5;
 }
 
-.detection-overlay__info-note {
-  margin: 0;
-  padding: var(--space-2) var(--space-3) var(--space-3);
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 0.6rem;
-  line-height: 1.35;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+.detection-overlay__info-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-top: 0.1rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.56rem;
+  line-height: 1.4;
+}
+
+.detection-overlay__info-foot-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-top: 0.05rem;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.detection-overlay__info--medium {
+  --info-bg: rgba(12, 10, 6, 0.92);
+}
+
+.detection-overlay__info--high,
+.detection-overlay__info--critical {
+  --info-bg: rgba(14, 8, 8, 0.94);
+}
+
+@media (max-width: 640px) {
+  .detection-overlay__info {
+    width: min(15rem, 86%);
+  }
+
+  .detection-overlay__info-copy {
+    font-size: 0.64rem;
+  }
 }
 
 /* ─── Animations ─── */

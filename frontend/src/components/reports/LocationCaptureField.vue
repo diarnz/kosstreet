@@ -1,11 +1,11 @@
 <template>
   <AppCard class="location-field stack-lg animate-scale-in" variant="default">
-    <div class="cluster-between">
+    <div class="location-field__head">
       <div>
-        <p class="eyebrow">Step 2</p>
-        <h2>Pin the issue location</h2>
+        <h2>Location</h2>
+        <p class="location-field__sub muted">Search or use GPS to pin where the issue is.</p>
       </div>
-      <AppBadge :tone="hasValidLocation ? 'success' : 'warning'">
+      <AppBadge :tone="hasValidLocation ? 'success' : 'warning'" size="xs">
         {{ hasValidLocation ? 'Ready' : 'Required' }}
       </AppBadge>
     </div>
@@ -198,6 +198,24 @@ function updateLongitude(value: string) {
   color: var(--text-primary);
 }
 
+.location-field__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.location-field h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.location-field__sub {
+  margin: 0.2rem 0 0;
+  font-size: var(--text-xs);
+}
+
 .location-field__confirmed span {
   color: var(--text-muted);
   font-size: var(--text-sm);
@@ -226,9 +244,25 @@ function updateLongitude(value: string) {
   gap: var(--space-4);
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
+  .location-field__gps-row {
+    padding: var(--space-2) 0 var(--space-4);
+  }
+
+  .location-field__confirmed {
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+  }
+
+  .location-field__confirmed strong,
+  .location-field__confirmed span {
+    overflow-wrap: anywhere;
+  }
+
   .location-field__grid {
     grid-template-columns: 1fr;
+    gap: var(--space-3);
   }
 }
 </style>

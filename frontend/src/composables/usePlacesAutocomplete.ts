@@ -9,6 +9,8 @@ import {
   type PlaceSelection,
 } from '@/utils/places';
 
+const PAC_CONTAINER_Z_INDEX = '120';
+
 function stylePlaceAutocompleteElement(element: google.maps.places.PlaceAutocompleteElement) {
   element.noInputIcon = true;
   element.style.setProperty('border', 'none');
@@ -17,6 +19,21 @@ function stylePlaceAutocompleteElement(element: google.maps.places.PlaceAutocomp
   element.style.setProperty('box-shadow', 'none');
   element.style.setProperty('width', '100%');
   element.style.setProperty('color-scheme', 'light');
+}
+
+function elevatePlacesDropdowns() {
+  document.querySelectorAll<HTMLElement>('.pac-container').forEach((container) => {
+    container.style.zIndex = PAC_CONTAINER_Z_INDEX;
+  });
+}
+
+function startPlacesDropdownObserver() {
+  elevatePlacesDropdowns();
+  const observer = new MutationObserver(() => {
+    elevatePlacesDropdowns();
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+  return observer;
 }
 
 export function usePlacesAutocomplete(hostRef: Ref<HTMLElement | null>) {
@@ -28,6 +45,7 @@ export function usePlacesAutocomplete(hostRef: Ref<HTMLElement | null>) {
   let selectListener: ((event: Event) => void) | null = null;
   let legacyListener: google.maps.MapsEventListener | null = null;
   let onSelectHandler: ((selection: PlaceSelection) => void) | null = null;
+  let dropdownObserver: MutationObserver | null = null;
 
   async function initialize(onSelect: (selection: PlaceSelection) => void) {
     onSelectHandler = onSelect;
@@ -77,6 +95,8 @@ export function usePlacesAutocomplete(hostRef: Ref<HTMLElement | null>) {
     };
 
     element.addEventListener('gmp-select', selectListener);
+    dropdownObserver?.disconnect();
+    dropdownObserver = startPlacesDropdownObserver();
   }
 
   async function mountLegacyAutocomplete(onSelect: (selection: PlaceSelection) => void) {
@@ -109,6 +129,8 @@ export function usePlacesAutocomplete(hostRef: Ref<HTMLElement | null>) {
 
     isReady.value = true;
     loadError.value = null;
+    dropdownObserver?.disconnect();
+    dropdownObserver = startPlacesDropdownObserver();
   }
 
   async function searchQuery(query: string) {
@@ -159,6 +181,8 @@ export function usePlacesAutocomplete(hostRef: Ref<HTMLElement | null>) {
   }
 
   function destroy() {
+    dropdownObserver?.disconnect();
+    dropdownObserver = null;
     if (autocompleteElement.value && selectListener) {
       autocompleteElement.value.removeEventListener('gmp-select', selectListener);
     }

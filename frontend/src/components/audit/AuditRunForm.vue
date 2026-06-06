@@ -1,33 +1,42 @@
 <template>
-  <section class="audit-run-form">
-    <form class="audit-run-form__form" @submit.prevent="submit">
-      <div class="audit-run-form__search-row">
+  <section class="audit-run-form audit-run-form--launch">
+    <form class="filter-bar audit-launch-bar" aria-label="Start street audit scan" @submit.prevent="submit">
+      <div class="filter-bar__search-wrap audit-launch-bar__search">
+        <svg class="filter-bar__search-icon" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.4" />
+          <path d="M10 10l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+        </svg>
         <LocationSearchField
           v-model:latitude="selectedLatitude"
           v-model:longitude="selectedLongitude"
           v-model:location-label="selectedLabel"
+          variant="embedded"
           label=""
-          placeholder="Search streets, landmarks, or neighborhoods…"
+          placeholder="Search route to scan…"
           :disabled="isCreating"
           hint=""
         />
-        <GpsLocateButton :disabled="isCreating" @located="onGpsLocated" />
       </div>
 
-      <div v-if="error" class="audit-run-form__error">
-        <p>{{ error }}</p>
-      </div>
+      <span class="filter-bar__divider" aria-hidden="true" />
 
-      <AppButton :disabled="isCreating || !canSubmit" type="submit">
-        {{ isCreating ? 'Creating…' : 'Start audit run' }}
-      </AppButton>
+      <GpsLocateButton compact :disabled="isCreating" @located="onGpsLocated" />
+
+      <button
+        class="audit-launch-bar__submit"
+        type="submit"
+        :disabled="isCreating || !canSubmit"
+      >
+        {{ isCreating ? 'Starting…' : 'Start scan' }}
+      </button>
+
+      <p v-if="error" class="audit-launch-bar__error">{{ error }}</p>
     </form>
   </section>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import AppButton from '@/components/common/AppButton.vue';
 import GpsLocateButton from '@/components/maps/GpsLocateButton.vue';
 import LocationSearchField from '@/components/maps/LocationSearchField.vue';
 import type { AuditRunCreatePayload } from '@/types/audit';
@@ -74,7 +83,7 @@ async function applyLocatedSelection(payload: { latitude: number; longitude: num
 function submit() {
   if (!canSubmit.value || props.isCreating) return;
   emit('create', {
-    municipality: 'Prizren',
+    municipality: 'Kosovo',
     route_name: selectedLabel.value?.trim() ?? null,
     latitude: selectedLatitude.value,
     longitude: selectedLongitude.value,
@@ -84,32 +93,137 @@ function submit() {
 </script>
 
 <style scoped>
-.audit-run-form__form {
-  display: grid;
-  gap: var(--space-3);
+.audit-run-form--launch {
+  overflow: visible;
 }
 
-.audit-run-form__search-row {
+.filter-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: var(--space-2);
-  align-items: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.5rem 0.32rem 0.32rem;
+  border: 1px solid rgba(23, 33, 26, 0.09);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 253, 247, 0.6);
+  backdrop-filter: blur(14px);
+  width: fit-content;
+  max-width: 100%;
+  overflow: visible;
 }
 
-.audit-run-form__search-row > :first-child {
+.audit-launch-bar__search {
+  flex: 1 1 16rem;
+  min-width: min(100%, 14rem);
+}
+
+.filter-bar__search-wrap {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  overflow: visible;
+}
+
+.filter-bar__search-icon {
+  position: absolute;
+  left: 0.65rem;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  color: var(--text-muted);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.audit-launch-bar__search :deep(.location-search) {
   flex: 1;
   min-width: 0;
 }
 
-.audit-run-form__error {
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: rgba(200, 76, 58, 0.07);
-  border: 1px solid rgba(200, 76, 58, 0.2);
+.audit-launch-bar__search :deep(.location-search__shell--embedded) {
+  padding-left: 2rem;
 }
 
-.audit-run-form__error p {
-  margin: 0;
-  color: var(--color-repair-red);
+.filter-bar__divider {
+  display: block;
+  width: 1px;
+  height: 1.25rem;
+  background: rgba(23, 33, 26, 0.1);
+  flex-shrink: 0;
+  margin: 0 0.1rem;
+}
+
+.audit-launch-bar__submit {
+  height: 2rem;
+  padding: 0 0.9rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--color-municipal-green);
+  color: #fff;
   font-size: var(--text-sm);
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background var(--motion-fast) ease,
+    opacity var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.audit-launch-bar__submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--color-municipal-green) 88%, #000);
+}
+
+.audit-launch-bar__submit:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.audit-launch-bar__error {
+  flex: 1 1 100%;
+  margin: 0.15rem 0 0 0.35rem;
+  color: var(--color-repair-red);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .filter-bar {
+    width: 100%;
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .audit-launch-bar__search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filter-bar__search-wrap {
+    width: 100%;
+  }
+
+  .filter-bar__divider {
+    display: none;
+  }
+
+  .audit-launch-bar__submit {
+    width: 100%;
+    height: 2.45rem;
+    justify-self: stretch;
+  }
 }
 </style>

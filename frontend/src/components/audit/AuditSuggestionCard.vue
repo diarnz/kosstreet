@@ -507,4 +507,33 @@ function submitReview() {
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
+
+@media (max-width: 640px) {
+  .audit-suggestion-card__header {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .audit-suggestion-card__header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .audit-suggestion-card__meta {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-suggestion-card__segment {
+    flex-direction: column;
+  }
+
+  .audit-suggestion-card__seg-btn {
+    border-right: 0;
+    border-bottom: 1px solid rgba(23, 33, 26, 0.1);
+  }
+
+  .audit-suggestion-card__seg-btn:last-child {
+    border-bottom: 0;
+  }
+}
 </style>

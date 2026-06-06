@@ -608,7 +608,11 @@ class AuditService:
         if not settings.google_maps_api_key:
             raise ValueError("Google Maps API key is required for unknown audit routes")
 
-        query = f"{route_name}, {run.municipality}, Kosovo"
+        municipality = (run.municipality or "").strip()
+        if municipality and municipality.lower() != "kosovo":
+            query = f"{route_name}, {municipality}, Kosovo"
+        else:
+            query = f"{route_name}, Kosovo"
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.get(
                 "https://maps.googleapis.com/maps/api/geocode/json",

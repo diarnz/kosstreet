@@ -43,6 +43,14 @@ withDefaults(
   padding: var(--space-6);
 }
 
+@media (max-width: 640px) {
+  .glass-panel--sm,
+  .glass-panel--md,
+  .glass-panel--lg {
+    padding: var(--space-4);
+  }
+}
+
 .glass-panel__header {
   display: flex;
   align-items: center;

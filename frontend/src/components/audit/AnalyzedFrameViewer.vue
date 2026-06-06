@@ -6,14 +6,28 @@
   >
     <div class="analyzed-frame-viewer__layout">
       <div
+        ref="mediaRef"
         class="analyzed-frame-viewer__media"
+        :class="{
+          'analyzed-frame-viewer__media--zoomable': zoomable,
+          'analyzed-frame-viewer__media--loading': imageLoading && resolvedImageUrl,
+        }"
+        :role="zoomable ? 'button' : undefined"
+        :tabindex="zoomable ? 0 : undefined"
+        :aria-label="zoomable ? 'View photo fullscreen' : undefined"
+        @click="zoomable ? openZoom() : undefined"
+        @keydown.enter.prevent="zoomable ? openZoom() : undefined"
+        @keydown.space.prevent="zoomable ? openZoom() : undefined"
       >
         <img
           v-if="resolvedImageUrl"
+          :key="resolvedImageUrl"
           :src="resolvedImageUrl"
           :alt="alt"
           class="analyzed-frame-viewer__image"
-          loading="lazy"
+          :loading="layout === 'scanner' ? 'eager' : 'lazy'"
+          @load="handleImageReady"
+          @error="handleImageReady"
         />
         <div v-else class="analyzed-frame-viewer__placeholder muted">No frame image</div>
 
@@ -27,9 +41,37 @@
           :regions="displayRegions"
           :severity="severity ?? undefined"
         />
+
+        <div v-if="layout === 'inspector'" class="analyzed-frame-viewer__hud">
+          <span
+            v-if="severity"
+            class="analyzed-frame-viewer__hud-severity"
+            :class="`analyzed-frame-viewer__hud-severity--${severity}`"
+          >
+            {{ severityLabel }}
+          </span>
+          <span v-if="confidence != null" class="analyzed-frame-viewer__hud-confidence">
+            {{ confidenceLabel }}
+          </span>
+        </div>
+
+        <button
+          v-if="zoomable && resolvedImageUrl"
+          type="button"
+          class="analyzed-frame-viewer__expand"
+          aria-label="Open fullscreen photo"
+          @click.stop="openZoom"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+        </button>
       </div>
 
-      <div v-if="layout !== 'scanner'" class="analyzed-frame-viewer__summary">
+      <div
+        v-if="layout !== 'scanner' && layout !== 'inspector'"
+        class="analyzed-frame-viewer__summary"
+      >
         <div class="analyzed-frame-viewer__title-row">
           <p class="analyzed-frame-viewer__title">
             {{ frameLabel ?? 'Analyzed frame' }}
@@ -71,11 +113,27 @@
         </dl>
       </div>
     </div>
+
+    <AnalyzedFrameLightbox
+      :open="zoomOpen"
+      :origin-rect="zoomOrigin"
+      :image-url="imageUrl"
+      :regions="regions"
+      :severity="severity"
+      :category="category"
+      :description="description"
+      :confidence="confidence"
+      :frame-index="frameIndex"
+      :frames-total="framesTotal"
+      :alt="alt"
+      @close="closeZoom"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
+import AnalyzedFrameLightbox, { type LightboxOriginRect } from '@/components/audit/AnalyzedFrameLightbox.vue';
 import type { AuditSuggestionSeverity, DetectionRegion } from '@/types/detection';
 import type { IssueCategory } from '@/types/report';
 import { resolveApiAssetUrl } from '@/utils/apiAssets';
@@ -102,7 +160,8 @@ const props = withDefaults(
     longitude?: number;
     alt?: string;
     showMetadata?: boolean;
-    layout?: 'compact' | 'detail' | 'scanner';
+    layout?: 'compact' | 'detail' | 'scanner' | 'inspector';
+    zoomable?: boolean;
     isCivicIssue?: boolean;
     ariaLabel?: string;
   }>(),
@@ -119,14 +178,63 @@ const props = withDefaults(
     pitch: null,
     showMetadata: false,
     layout: 'compact',
+    zoomable: undefined,
     alt: 'AI street audit analyzed frame',
     ariaLabel: 'Analyzed street audit frame with severity overlay',
   },
 );
 
+const emit = defineEmits<{
+  'image-loading': [];
+  'image-loaded': [];
+}>();
+
+const mediaRef = ref<HTMLElement | null>(null);
+const zoomOpen = ref(false);
+const zoomOrigin = ref<LightboxOriginRect | null>(null);
+const imageLoading = ref(false);
+
+const zoomable = computed(() => {
+  if (props.zoomable != null) {
+    return props.zoomable;
+  }
+  return props.layout === 'inspector';
+});
+
+function openZoom() {
+  if (!resolvedImageUrl.value || !zoomable.value) {
+    return;
+  }
+  zoomOrigin.value = mediaRef.value?.getBoundingClientRect() ?? null;
+  zoomOpen.value = true;
+}
+
+function closeZoom() {
+  zoomOpen.value = false;
+}
+
 const resolvedImageUrl = computed(() =>
   props.imageUrl ? resolveApiAssetUrl(props.imageUrl) : null,
 );
+
+watch(
+  resolvedImageUrl,
+  (url) => {
+    if (!url) {
+      imageLoading.value = false;
+      emit('image-loaded');
+      return;
+    }
+    imageLoading.value = true;
+    emit('image-loading');
+  },
+  { immediate: true },
+);
+
+function handleImageReady() {
+  imageLoading.value = false;
+  emit('image-loaded');
+}
 
 const displayRegions = computed(() => props.regions ?? []);
 const hasRegions = computed(() => displayRegions.value.length > 0);
@@ -274,6 +382,137 @@ const metaItems = computed(() => {
   line-height: 1.45;
 }
 
+.analyzed-frame-viewer--inspector .analyzed-frame-viewer__layout {
+  grid-template-columns: 1fr;
+}
+
+.analyzed-frame-viewer--inspector .analyzed-frame-viewer__media {
+  max-width: none;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  min-height: 6.5rem;
+  border-radius: var(--radius-md);
+}
+
+.analyzed-frame-viewer__media--loading .analyzed-frame-viewer__image {
+  opacity: 0.35;
+  filter: blur(2px);
+}
+
+.analyzed-frame-viewer__media--loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 45%,
+    transparent 90%
+  );
+  animation: analyzed-frame-shimmer 1.1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes analyzed-frame-shimmer {
+  from {
+    transform: translateX(-120%);
+  }
+  to {
+    transform: translateX(120%);
+  }
+}
+
+.analyzed-frame-viewer__media--zoomable {
+  cursor: zoom-in;
+}
+
+.analyzed-frame-viewer__media--zoomable:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-municipal-green) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.analyzed-frame-viewer__expand {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-md);
+  background: rgba(8, 12, 10, 0.55);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  opacity: 0.78;
+  transform: scale(1);
+  transition:
+    opacity var(--motion-fast) ease,
+    transform var(--motion-fast) ease,
+    background var(--motion-fast) ease;
+}
+
+.analyzed-frame-viewer__media--zoomable:hover .analyzed-frame-viewer__expand,
+.analyzed-frame-viewer__expand:focus-visible {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.analyzed-frame-viewer__expand:hover {
+  background: rgba(8, 12, 10, 0.82);
+}
+
+.analyzed-frame-viewer__hud {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.45rem 0.4rem;
+  background: linear-gradient(180deg, transparent, rgba(8, 12, 10, 0.82));
+  pointer-events: none;
+}
+
+.analyzed-frame-viewer__hud-severity,
+.analyzed-frame-viewer__hud-confidence {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(6px);
+}
+
+.analyzed-frame-viewer__hud-severity {
+  text-transform: capitalize;
+}
+
+.analyzed-frame-viewer__hud-severity--low {
+  background: rgba(34, 197, 94, 0.88);
+  color: #fff;
+}
+
+.analyzed-frame-viewer__hud-severity--medium {
+  background: rgba(234, 179, 8, 0.92);
+  color: #1a1408;
+}
+
+.analyzed-frame-viewer__hud-severity--high,
+.analyzed-frame-viewer__hud-severity--critical {
+  background: rgba(239, 68, 68, 0.9);
+  color: #fff;
+}
+
+.analyzed-frame-viewer__hud-confidence {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 .analyzed-frame-viewer--scanner .analyzed-frame-viewer__layout {
   grid-template-columns: 1fr;
 }
@@ -324,5 +563,18 @@ dd {
   color: var(--text-secondary);
   font-size: var(--text-xs);
   font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .analyzed-frame-viewer__layout,
+  .analyzed-frame-viewer--detail .analyzed-frame-viewer__layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .analyzed-frame-viewer__media,
+  .analyzed-frame-viewer--detail .analyzed-frame-viewer__media {
+    max-width: none;
+  }
 }
 </style>

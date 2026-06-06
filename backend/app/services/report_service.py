@@ -163,6 +163,22 @@ class ReportService:
             )
         return refreshed
 
+    async def get_report_image(self, report_id: UUID) -> tuple[bytes, str]:
+        report = await self.get_report_detail(report_id)
+        if not report.image_path:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Report has no image",
+            )
+
+        try:
+            return self.storage.read_bytes(report.image_path)
+        except FileNotFoundError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Report image not found",
+            ) from exc
+
     async def analyze_image(self, image: UploadFile) -> ImageAnalysisResult:
         try:
             return await self.ai_service.analyze_upload(image)

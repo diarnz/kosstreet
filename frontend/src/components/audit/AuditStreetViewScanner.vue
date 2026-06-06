@@ -2,7 +2,7 @@
   <section class="audit-street-view-scanner">
     <div class="audit-street-view-scanner__head">
       <span class="audit-street-view-scanner__stat">{{ scanProgressLabel }}</span>
-      <AppBadge tone="source-ai-audit">{{ modeLabel }}</AppBadge>
+      <AppBadge tone="source-ai-audit" size="xs">{{ modeLabel }}</AppBadge>
     </div>
 
     <AppCard v-if="error" class="stack" variant="muted">
@@ -11,18 +11,12 @@
       <AppButton variant="secondary" size="sm" @click="emit('refresh')">Retry</AppButton>
     </AppCard>
 
-    <AppLoading v-else-if="isLoading" label="Loading scan path" />
-
-    <AppEmptyState
-      v-else-if="!scanPath.length && !isPipelineActive"
-      tone="audit"
-      title="No scan points yet"
-      description="Scan points appear here once the pipeline starts analyzing the route."
-      action-label="Refresh"
-      @action="emit('refresh')"
+    <AppLoading
+      v-else-if="isLoading && (scanPath.length > 0 || isPipelineActive)"
+      label="Loading scan path"
     />
 
-    <template v-else>
+    <template v-else-if="scanPath.length > 0 || isPipelineActive">
       <p v-if="evidenceError" class="audit-street-view-scanner__error" role="alert">
         {{ evidenceError }}
       </p>
@@ -30,17 +24,23 @@
       <div
         ref="viewportRef"
         class="audit-street-view-scanner__viewport"
+        :class="{
+          'audit-street-view-scanner__viewport--fs': isFullscreen,
+          'audit-street-view-scanner__viewport--fs-enter': fsAnimPhase === 'enter',
+          'audit-street-view-scanner__viewport--fs-exit': fsAnimPhase === 'exit',
+        }"
         tabindex="0"
         aria-label="Street audit scanner viewport"
         @keydown="handleViewportKeydown"
       >
+        <div ref="fsStageRef" class="scanner-fs-stage">
         <Transition name="scanner-fade" mode="out-in">
           <div v-if="scannerMode === 'evidence'" key="evidence" class="audit-street-view-scanner__evidence">
-            <AppLoading v-if="evidenceLoading" label="Loading evidence frame" />
-
-            <template v-else-if="evidencePresentation">
+            <div class="audit-street-view-scanner__evidence-stage">
               <AnalyzedFrameViewer
+                v-if="evidencePresentation && !evidenceLoading"
                 layout="scanner"
+                :zoomable="false"
                 alt=""
                 :category="evidencePresentation.category"
                 :confidence="evidencePresentation.confidence"
@@ -55,31 +55,33 @@
                 :pitch="evidencePresentation.pitch"
                 :regions="evidencePresentation.regions"
                 :severity="evidencePresentation.severity"
+                @image-loaded="evidenceImageLoading = false"
+                @image-loading="evidenceImageLoading = true"
               />
 
-              <div class="audit-street-view-scanner__hud" aria-hidden="true">
-                <button class="audit-street-view-scanner__hud-btn" type="button" @click="enterExploreMode">
-                  <svg viewBox="0 0 16 16" fill="none" width="12" height="12" aria-hidden="true">
-                    <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  Explore
-                </button>
-                <button class="audit-street-view-scanner__hud-btn audit-street-view-scanner__hud-btn--fs" type="button" :aria-label="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'" @click="toggleFullscreen">
-                  <svg v-if="!isFullscreen" viewBox="0 0 16 16" fill="none" width="13" height="13" aria-hidden="true">
-                    <path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                  <svg v-else viewBox="0 0 16 16" fill="none" width="13" height="13" aria-hidden="true">
-                    <path d="M6 2v4H2M14 6h-4V2M10 14v-4h4M2 10h4v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </button>
-              </div>
-            </template>
+              <Transition name="scanner-fade">
+                <div
+                  v-if="showEvidenceBusy"
+                  class="audit-street-view-scanner__evidence-busy"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <div class="audit-street-view-scanner__evidence-busy-panel">
+                    <span class="audit-street-view-scanner__evidence-busy-spinner" aria-hidden="true" />
+                    <p class="audit-street-view-scanner__evidence-busy-title">Loading frame</p>
+                    <p class="audit-street-view-scanner__evidence-busy-sub">
+                      {{ evidenceBusyLabel }}
+                    </p>
+                  </div>
+                </div>
+              </Transition>
+            </div>
 
             <AppEmptyState
-              v-else
+              v-if="!showEvidenceBusy && !evidencePresentation"
               tone="audit"
               title="Evidence unavailable"
-              description="Could not load the analyzed frame for this scan point."
+              :description="evidenceError ?? 'Could not load the analyzed frame for this scan point.'"
             />
           </div>
 
@@ -101,19 +103,54 @@
               title="Select a scan point"
               description="Choose a point on the timeline or a suggestion to load Street View."
             />
-            <button
-              v-if="hasEvidenceForSelection"
-              class="audit-street-view-scanner__hud-btn audit-street-view-scanner__hud-btn--explore"
-              type="button"
-              @click="enterEvidenceMode"
-            >
-              View evidence
-              <svg viewBox="0 0 16 16" fill="none" width="12" height="12" aria-hidden="true">
-                <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
           </div>
         </Transition>
+        </div>
+
+        <div v-if="showScannerHud" class="scanner-hud" aria-label="Scanner controls">
+          <button
+            v-if="scannerMode === 'evidence'"
+            class="scanner-hud__btn"
+            type="button"
+            title="Street view"
+            aria-label="Open street view"
+            @click="enterExploreMode"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M3 11l19-9-9 19-2-8-8-2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <button
+            v-else-if="hasEvidenceForSelection"
+            class="scanner-hud__btn"
+            type="button"
+            title="Evidence photo"
+            aria-label="View evidence photo"
+            @click="enterEvidenceMode"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4" y="5" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.8" />
+              <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+              <path d="M4 16l4.5-4.5 3 3L14 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <span v-else class="scanner-hud__spacer" />
+
+          <button
+            class="scanner-hud__btn"
+            type="button"
+            :title="isFullscreen ? 'Exit fullscreen' : 'Fullscreen'"
+            :aria-label="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+            @click="toggleFullscreen"
+          >
+            <svg v-if="!isFullscreen" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 9H5V5M15 9h4V5M9 15H5v4M15 15h4v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </button>
+        </div>
 
         <AuditAnalyzingOverlay
           :progress="pipelineProgress"
@@ -126,19 +163,12 @@
         />
       </div>
 
-      <AuditScanTimeline
-        v-if="enrichedScanPath.length"
-        :scan-path="enrichedScanPath"
-        :selected-frame-index="selectedFrameIndex"
-        @select="handleTimelineSelect"
-        @hover="handleTimelineHover"
-      />
     </template>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
 import AppButton from '@/components/common/AppButton.vue';
 import AppCard from '@/components/common/AppCard.vue';
@@ -146,7 +176,6 @@ import AppEmptyState from '@/components/common/AppEmptyState.vue';
 import AppLoading from '@/components/common/AppLoading.vue';
 import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import AuditAnalyzingOverlay from '@/components/audit/AuditAnalyzingOverlay.vue';
-import AuditScanTimeline from '@/components/audit/AuditScanTimeline.vue';
 import StreetViewPanel from '@/components/streetview/StreetViewPanel.vue';
 import {
   analyzeAuditView,
@@ -165,7 +194,6 @@ import type { AuditSuggestion, AuditSuggestionSeverity, DetectionRegion } from '
 import type { IssueCategory } from '@/types/report';
 import type { StreetViewCurrentView, StreetViewTarget } from '@/types/streetView';
 import { ApiError } from '@/types/api';
-import { prefetchImageUrl } from '@/utils/auditFramePrefetch';
 import { enrichScanPathWithSuggestionStatus } from '@/utils/auditScanPath';
 import {
   auditRunToStreetViewTarget,
@@ -220,24 +248,158 @@ const analyzeError = ref<string | null>(null);
 const analyzeCancelled = ref(false);
 const scannerMode = ref<ScannerMode>('explore');
 const viewportRef = ref<HTMLElement | null>(null);
+const fsStageRef = ref<HTMLElement | null>(null);
 const isFullscreen = ref(false);
+const fsAnimPhase = ref<'enter' | 'exit' | null>(null);
 
-function toggleFullscreen() {
-  if (!document.fullscreenElement) {
-    void (viewportRef.value ?? document.documentElement).requestFullscreen();
-    isFullscreen.value = true;
-  } else {
-    void document.exitFullscreen();
-    isFullscreen.value = false;
+type FsOriginRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+const fsOriginRect = ref<FsOriginRect | null>(null);
+
+const FS_ENTER_MS = 520;
+const FS_EXIT_MS = 380;
+
+const showScannerHud = computed(
+  () => !props.isLoading && !props.error && (props.scanPath.length > 0 || isPipelineActive.value),
+);
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function applyFsFlipVars(viewport: HTMLElement, rect: FsOriginRect) {
+  const originCx = rect.left + rect.width / 2;
+  const originCy = rect.top + rect.height / 2;
+  const viewportCx = window.innerWidth / 2;
+  const viewportCy = window.innerHeight / 2;
+  const scaleX = rect.width / window.innerWidth;
+  const scaleY = rect.height / window.innerHeight;
+  const scale = Math.max(Math.min(scaleX, scaleY), 0.06);
+
+  viewport.style.setProperty('--fs-x', `${originCx - viewportCx}px`);
+  viewport.style.setProperty('--fs-y', `${originCy - viewportCy}px`);
+  viewport.style.setProperty('--fs-scale', String(scale));
+}
+
+function captureFsOrigin(viewport: HTMLElement): FsOriginRect {
+  const rect = viewport.getBoundingClientRect();
+  return {
+    left: rect.left,
+    top: rect.top,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function clearFsFlipVars(viewport: HTMLElement) {
+  viewport.style.removeProperty('--fs-x');
+  viewport.style.removeProperty('--fs-y');
+  viewport.style.removeProperty('--fs-scale');
+}
+
+function waitForAnimation(stage: HTMLElement, animationName: string, timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const finish = () => {
+      stage.removeEventListener('animationend', onEnd);
+      window.clearTimeout(fallback);
+      resolve();
+    };
+    const onEnd = (event: AnimationEvent) => {
+      if (event.animationName === animationName) {
+        finish();
+      }
+    };
+    stage.addEventListener('animationend', onEnd);
+    const fallback = window.setTimeout(finish, timeoutMs + 50);
+  });
+}
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
+async function toggleFullscreen() {
+  const viewport = viewportRef.value;
+  if (!viewport) return;
+
+  const reducedMotion = prefersReducedMotion();
+
+  if (document.fullscreenElement === viewport) {
+    if (reducedMotion || !fsOriginRect.value) {
+      fsAnimPhase.value = null;
+      await document.exitFullscreen();
+      return;
+    }
+
+    applyFsFlipVars(viewport, fsOriginRect.value);
+    fsAnimPhase.value = 'exit';
+    const stage = fsStageRef.value;
+    if (stage) {
+      await waitForAnimation(stage, 'scanner-fs-exit', FS_EXIT_MS);
+    }
+    fsAnimPhase.value = null;
+    await document.exitFullscreen();
+    clearFsFlipVars(viewport);
+    fsOriginRect.value = null;
+    return;
+  }
+
+  const origin = captureFsOrigin(viewport);
+  fsOriginRect.value = origin;
+  applyFsFlipVars(viewport, origin);
+
+  try {
+    await viewport.requestFullscreen();
+  } catch {
+    fsAnimPhase.value = null;
+    fsOriginRect.value = null;
+    clearFsFlipVars(viewport);
+    return;
+  }
+
+  if (reducedMotion) {
+    return;
+  }
+
+  await nextFrame();
+  fsAnimPhase.value = 'enter';
+  const stage = fsStageRef.value;
+  if (stage) {
+    await waitForAnimation(stage, 'scanner-fs-enter', FS_ENTER_MS);
+  }
+  fsAnimPhase.value = null;
+}
+
+function syncFullscreenState() {
+  const active = document.fullscreenElement === viewportRef.value;
+  isFullscreen.value = active;
+  if (!active) {
+    fsAnimPhase.value = null;
+    fsOriginRect.value = null;
+    const viewport = viewportRef.value;
+    if (viewport) {
+      clearFsFlipVars(viewport);
+    }
   }
 }
 
-document.addEventListener('fullscreenchange', () => {
-  isFullscreen.value = !!document.fullscreenElement;
+document.addEventListener('fullscreenchange', syncFullscreenState);
+
+onUnmounted(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreenState);
 });
+
 const exploreLocked = ref(false);
 const evidenceFrame = ref<AuditFrameDetail | null>(null);
 const evidenceLoading = ref(false);
+const evidenceImageLoading = ref(false);
 const evidenceError = ref<string | null>(null);
 const analyzeQuota = ref<OnDemandAnalyzeQuota | null>(null);
 
@@ -351,6 +513,25 @@ const canAnalyzeCurrentView = computed(
     Boolean(resolveAnalyzeView()),
 );
 
+const showEvidenceBusy = computed(
+  () => evidenceLoading.value || evidenceImageLoading.value,
+);
+
+const evidenceBusyLabel = computed(() => {
+  if (evidenceLoading.value) {
+    return 'Fetching analyzed frame data…';
+  }
+
+  const total = props.scanPath.length || props.run.frames_total;
+  if (props.selectedFrameIndex != null && total > 0) {
+    const index = props.scanPath.findIndex((point) => point.frame_index === props.selectedFrameIndex);
+    const position = index >= 0 ? index + 1 : props.selectedFrameIndex + 1;
+    return `Preparing scan point ${position} of ${total}`;
+  }
+
+  return 'Preparing evidence photo…';
+});
+
 const evidencePresentation = computed<EvidencePresentation | null>(() => {
   if (props.selectedSuggestion) {
     return presentationFromSuggestion(props.selectedSuggestion);
@@ -397,6 +578,7 @@ watch(
 watch(
   () => [props.selectedFrameIndex, props.selectedSuggestion?.id] as const,
   () => {
+    evidenceImageLoading.value = true;
     exploreLocked.value = false;
     evidenceFrame.value = null;
     if (shouldAutoEnterEvidence.value) {
@@ -404,6 +586,7 @@ watch(
       void loadEvidenceFrame();
     } else {
       scannerMode.value = 'explore';
+      evidenceImageLoading.value = false;
     }
   },
 );
@@ -453,23 +636,30 @@ function presentationFromFrame(frame: AuditFrameDetail): EvidencePresentation {
 }
 
 async function loadEvidenceFrame() {
+  evidenceError.value = null;
+
   if (props.selectedSuggestion) {
-    evidenceError.value = null;
+    evidenceLoading.value = false;
+    evidenceImageLoading.value = true;
     return;
   }
+
   if (props.selectedFrameIndex == null) {
     evidenceFrame.value = null;
+    evidenceLoading.value = false;
+    evidenceImageLoading.value = false;
     return;
   }
 
   evidenceLoading.value = true;
-  evidenceError.value = null;
+  evidenceImageLoading.value = true;
 
   try {
     if (props.isDemoData) {
       evidenceFrame.value = getDemoFrameDetail(props.run.id, props.selectedFrameIndex);
       if (!evidenceFrame.value) {
         evidenceError.value = 'Could not load demo evidence frame.';
+        evidenceImageLoading.value = false;
       }
       return;
     }
@@ -477,6 +667,7 @@ async function loadEvidenceFrame() {
     evidenceFrame.value = await getAuditFrame(props.run.id, props.selectedFrameIndex);
   } catch (loadError) {
     evidenceFrame.value = null;
+    evidenceImageLoading.value = false;
     evidenceError.value =
       loadError instanceof Error ? loadError.message : 'Could not load evidence frame.';
   } finally {
@@ -495,22 +686,6 @@ function enterExploreMode() {
   scannerMode.value = 'explore';
 }
 
-function handleTimelineHover(frameIndex: number) {
-  const currentIndex = props.scanPath.findIndex((point) => point.frame_index === frameIndex);
-  if (currentIndex < 0) {
-    return;
-  }
-
-  for (const offset of [-1, 1]) {
-    const neighbor = props.scanPath[currentIndex + offset];
-    if (!neighbor) {
-      continue;
-    }
-
-    prefetchImageUrl(resolveFrameImageUrl(neighbor.frame_index, neighbor.suggestion_id));
-  }
-}
-
 function resolveFrameImageUrl(frameIndex: number, suggestionId?: string | null): string {
   if (props.isDemoData) {
     return getDemoFrameDetail(props.run.id, frameIndex)?.frame_image_url ?? '/demo/audit/clean_01.jpg';
@@ -521,10 +696,6 @@ function resolveFrameImageUrl(frameIndex: number, suggestionId?: string | null):
   }
 
   return auditFrameImagePath(props.run.id, frameIndex);
-}
-
-function handleTimelineSelect(frameIndex: number) {
-  emit('scan-point-selected', frameIndex);
 }
 
 async function loadAnalyzeQuota() {
@@ -647,7 +818,7 @@ async function analyzeCurrentView() {
 <style scoped>
 .audit-street-view-scanner {
   display: grid;
-  gap: var(--space-3);
+  gap: 0.5rem;
 }
 
 .audit-street-view-scanner__head {
@@ -666,9 +837,10 @@ async function analyzeCurrentView() {
 }
 
 .audit-street-view-scanner__stat {
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: 750;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .audit-street-view-scanner__stat--quota {
@@ -693,59 +865,165 @@ async function analyzeCurrentView() {
 }
 
 .audit-street-view-scanner__viewport {
+  --fs-x: 0px;
+  --fs-y: 0px;
+  --fs-scale: 1;
   position: relative;
   min-height: 22rem;
   outline: none;
 }
 
-.audit-street-view-scanner__viewport:fullscreen {
+.scanner-fs-stage {
+  position: relative;
+  width: 100%;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .scanner-fs-stage,
+.audit-street-view-scanner__viewport--fs .scanner-fs-stage {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 100vh;
-  min-height: 100vh;
-  background: #000;
+}
+
+.audit-street-view-scanner__viewport--fs-enter .scanner-fs-stage {
+  animation: scanner-fs-enter 520ms var(--ease-spring, cubic-bezier(0.22, 1.12, 0.32, 1)) both;
+}
+
+.audit-street-view-scanner__viewport--fs-exit .scanner-fs-stage {
+  animation: scanner-fs-exit 380ms var(--ease-out-expo, ease) both;
+}
+
+@keyframes scanner-fs-enter {
+  from {
+    opacity: 0.72;
+    transform: translate(var(--fs-x), var(--fs-y)) scale(var(--fs-scale));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes scanner-fs-exit {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+
+  to {
+    opacity: 0.55;
+    transform: translate(var(--fs-x), var(--fs-y)) scale(var(--fs-scale));
+  }
+}
+
+.audit-street-view-scanner__viewport--fs-enter .scanner-hud {
+  animation: scanner-hud-enter 360ms 120ms ease both;
+}
+
+@keyframes scanner-hud-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.audit-street-view-scanner__viewport:fullscreen,
+.audit-street-view-scanner__viewport--fs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: #050708;
   overflow: hidden;
 }
 
-.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence {
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence,
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__evidence {
   flex: 1;
+  width: 100%;
   min-height: 0;
+  justify-content: stretch;
+  align-items: stretch;
 }
 
-.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(img),
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence::before,
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__evidence::before {
+  display: none;
+}
+
 .audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer),
-.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__media) {
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer) {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__layout),
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__layout) {
+  height: 100%;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__media),
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__media) {
   width: 100%;
   height: 100%;
   max-width: none !important;
   max-height: none !important;
   aspect-ratio: unset !important;
-  object-fit: contain;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
-.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore {
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__evidence :deep(img),
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__evidence :deep(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #050708;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore,
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__explore {
   flex: 1;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore :deep(.street-view-panel),
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__explore :deep(.street-view-panel) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
 }
 
-.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
+.audit-street-view-scanner__viewport:fullscreen .audit-street-view-scanner__explore :deep(.street-view-panel__canvas),
+.audit-street-view-scanner__viewport--fs .audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
+  flex: 1;
   height: 100% !important;
-  min-height: unset !important;
+  min-height: 0 !important;
 }
 
-/* Firefox */
 .audit-street-view-scanner__viewport:-moz-full-screen {
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: #050708;
 }
 
-/* Safari */
 .audit-street-view-scanner__viewport:-webkit-full-screen {
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: #050708;
 }
 
 .audit-street-view-scanner__viewport:focus-visible {
@@ -769,8 +1047,69 @@ async function analyzeCurrentView() {
   justify-content: center;
 }
 
-.audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer) {
+.audit-street-view-scanner__evidence-stage {
+  position: relative;
   width: min(100%, 42rem);
+  min-height: clamp(18rem, 42vh, 28rem);
+}
+
+.audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer) {
+  width: 100%;
+}
+
+.audit-street-view-scanner__evidence-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-lg);
+  background: rgba(8, 12, 10, 0.58);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.audit-street-view-scanner__evidence-busy-panel {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: calc(var(--radius-md) + 2px);
+  background: rgba(12, 16, 14, 0.82);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.audit-street-view-scanner__evidence-busy-spinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2px solid rgba(47, 93, 80, 0.25);
+  border-top-color: var(--color-municipal-green);
+  border-radius: 50%;
+  animation: audit-evidence-spin 800ms linear infinite;
+}
+
+.audit-street-view-scanner__evidence-busy-title {
+  margin: 0.15rem 0 0;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: -0.01em;
+}
+
+.audit-street-view-scanner__evidence-busy-sub {
+  margin: 0;
+  max-width: 14rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+@keyframes audit-evidence-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .audit-street-view-scanner__evidence :deep(.analyzed-frame-viewer__media) {
@@ -782,81 +1121,64 @@ async function analyzeCurrentView() {
 }
 
 /* Gradient vignette at top of evidence image for HUD readability */
-.audit-street-view-scanner__evidence::before {
+.audit-street-view-scanner__evidence-stage::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(100%, 42rem);
-  height: 5rem;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 100%);
+  left: 0;
+  right: 0;
+  height: 4rem;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.45) 0%, transparent 100%);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   z-index: 15;
   pointer-events: none;
 }
 
-/* ─── HUD overlay controls ─── */
-.audit-street-view-scanner__hud {
+/* ─── Unified icon HUD ─── */
+.scanner-hud {
   position: absolute;
-  top: var(--space-3);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100% - 2rem), 42rem);
+  inset: 0.65rem 0.65rem auto;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 20;
+  gap: 0.5rem;
   pointer-events: none;
 }
 
-.audit-street-view-scanner__hud-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.9rem 0.45rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-  background: rgba(5, 8, 14, 0.68);
-  backdrop-filter: blur(14px) saturate(1.4);
+.scanner-hud__spacer {
+  flex: 1;
+}
+
+.scanner-hud__btn {
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-md);
+  background: rgba(8, 12, 16, 0.72);
+  backdrop-filter: blur(12px) saturate(1.3);
   color: rgba(255, 255, 255, 0.95);
-  font-size: 0.68rem;
-  font-weight: 900;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
   cursor: pointer;
   pointer-events: all;
-  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition:
+    background var(--motion-fast) ease,
+    border-color var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
 }
 
-.audit-street-view-scanner__hud-btn:hover {
-  background: rgba(5, 8, 14, 0.88);
-  border-color: rgba(255, 255, 255, 0.32);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.1);
+.scanner-hud__btn:hover {
+  background: rgba(12, 18, 24, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
 }
 
-/* "View evidence" button: absolute over the explore canvas */
-.audit-street-view-scanner__hud-btn--explore {
-  position: absolute;
-  top: var(--space-3);
-  left: var(--space-3);
-  z-index: 10;
-  pointer-events: all;
-  padding: 0.45rem 0.7rem 0.45rem 0.9rem;
-}
-
-.audit-street-view-scanner__hud-badge {
-  padding: 0.35rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(5, 8, 14, 0.58);
-  backdrop-filter: blur(12px);
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.63rem;
-  font-weight: 850;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.audit-street-view-scanner__viewport:fullscreen .scanner-hud,
+.audit-street-view-scanner__viewport--fs .scanner-hud {
+  inset: 1rem 1rem auto;
 }
 
 .scanner-fade-enter-active,
@@ -875,10 +1197,36 @@ async function analyzeCurrentView() {
   }
 }
 
+@media (max-width: 640px) {
+  .audit-street-view-scanner__head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .audit-street-view-scanner__info {
+    justify-content: space-between;
+  }
+
+  .audit-street-view-scanner__viewport {
+    min-height: 16rem;
+  }
+
+  .audit-street-view-scanner__explore :deep(.street-view-panel__canvas) {
+    min-height: 16rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scanner-fade-enter-active,
   .scanner-fade-leave-active {
     transition: none;
+  }
+
+  .audit-street-view-scanner__viewport--fs-enter .scanner-fs-stage,
+  .audit-street-view-scanner__viewport--fs-exit .scanner-fs-stage,
+  .audit-street-view-scanner__viewport--fs-enter .scanner-hud {
+    animation: none;
   }
 }
 </style>

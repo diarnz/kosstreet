@@ -2,6 +2,7 @@
 @import "./utilities.css";
 @import "./animations.css";
 @import "./background.css";
+@import "./responsive.css";
 
 :root {
   color: var(--text-primary);
@@ -106,7 +107,7 @@ img {
 
 /* Google Places Autocomplete dropdown */
 .pac-container {
-  z-index: var(--z-overlay);
+  z-index: var(--z-dropdown);
   margin-top: 0.35rem;
   border: var(--border-soft);
   border-radius: var(--radius-md);

@@ -1,12 +1,12 @@
 <template>
   <AppCard class="photo-field stack-lg animate-scale-in" variant="default">
-    <div class="cluster-between">
+    <div class="photo-field__head">
       <div>
-        <p class="eyebrow">Step 1</p>
-        <h2>Add a photo of the issue</h2>
+        <h2>Photo</h2>
+        <p class="photo-field__sub muted">AI detects the issue type from your image.</p>
       </div>
-      <AppBadge :tone="modelValue ? 'success' : 'neutral'">
-        {{ modelValue ? 'Added' : 'Optional' }}
+      <AppBadge v-if="analysis?.category" tone="source-ai-audit" size="xs">
+        {{ categoryLabel }}
       </AppBadge>
     </div>
 
@@ -80,6 +80,7 @@ import AppCard from '@/components/common/AppCard.vue';
 import AnalyzedFrameViewer from '@/components/audit/AnalyzedFrameViewer.vue';
 import { useImagePreview } from '@/composables/useImagePreview';
 import type { ReportImageAnalysis } from '@/types/report';
+import { categoryLabels } from '@/utils/reportFormatting';
 
 const props = withDefaults(
   defineProps<{
@@ -108,6 +109,11 @@ const { previewUrl } = useImagePreview(toRef(props, 'modelValue'));
 const fileSizeLabel = computed(() => {
   if (!props.modelValue) return '';
   return `${(props.modelValue.size / 1024 / 1024).toFixed(2)} MB`;
+});
+
+const categoryLabel = computed(() => {
+  const category = props.analysis?.category;
+  return category ? categoryLabels[category] : null;
 });
 
 function acceptFile(file: File | null) {
@@ -142,8 +148,22 @@ function onDrop(event: DragEvent) {
 </script>
 
 <style scoped>
+.photo-field__head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
 .photo-field h2 {
   margin: 0;
+  font-size: var(--text-lg);
+}
+
+.photo-field__sub {
+  margin: 0.2rem 0 0;
+  font-size: var(--text-xs);
 }
 
 .photo-field__dropzone {
@@ -247,9 +267,37 @@ function onDrop(event: DragEvent) {
   gap: var(--space-2);
 }
 
-@media (max-width: 620px) {
+@media (max-width: 640px) {
+  .photo-field__dropzone {
+    min-height: 9rem;
+    padding: var(--space-5);
+  }
+
+  .photo-field__dropzone--filled {
+    min-height: 6rem;
+  }
+
+  .photo-field__camera {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .photo-field__camera svg {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  .photo-field__cta {
+    font-size: var(--text-sm);
+  }
+
   .photo-field__preview {
     grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .photo-field__meta :deep(.app-button) {
+    width: 100%;
   }
 }
 </style>

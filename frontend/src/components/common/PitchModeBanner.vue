@@ -83,4 +83,13 @@ const resolvedMessage = computed(() => props.message ?? demoScenario.disclaimer)
 .pitch-banner--compact p {
   font-size: var(--text-sm);
 }
+
+@media (max-width: 640px) {
+  .pitch-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: var(--space-3);
+  }
+}
 </style>

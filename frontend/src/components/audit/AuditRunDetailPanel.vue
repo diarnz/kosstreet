@@ -2,38 +2,36 @@
   <div class="audit-detail">
     <template v-if="run">
 
-      <div class="audit-detail__header">
+      <template v-if="showScanGlobeWaiting">
+        <AuditScanGlobeLoading v-if="scanPathLoading" />
+        <AuditScanGlobeEmpty v-else @refresh="$emit('refreshScanPath')" />
+      </template>
+
+      <template v-else>
+
+      <header class="audit-detail__header">
         <div class="audit-detail__intro">
+          <p class="audit-detail__eyebrow">Audit run</p>
           <h2 class="audit-detail__title">{{ run.route_name }}</h2>
           <div class="audit-detail__meta">
             <span>{{ run.municipality }}</span>
             <span class="audit-detail__sep" aria-hidden="true">·</span>
             <span>{{ formatAuditDateTime(run.created_at) }}</span>
             <span class="audit-detail__sep" aria-hidden="true">·</span>
-            <span><strong>{{ issueCount }}</strong> issue{{ issueCount === 1 ? '' : 's' }}</span>
+            <span class="audit-detail__issues">{{ issueCount }} issue{{ issueCount === 1 ? '' : 's' }}</span>
           </div>
         </div>
-        <div class="cluster">
+        <div class="audit-detail__status">
           <AuditRunStatusPill :status="run.status" />
-          <AppBadge v-if="isDemoData" tone="warning">Demo</AppBadge>
+          <AppBadge v-if="isDemoData" tone="warning" size="xs">Demo</AppBadge>
         </div>
-      </div>
+      </header>
 
-      <AppCard v-if="isLegacyRun" class="audit-detail__legacy" variant="muted">
-        <AppBadge tone="warning">Legacy scan format</AppBadge>
-        <p class="audit-detail__legacy-copy">
-          This run used the older four-heading capture model. Use the All frames tab for the full filmstrip.
-        </p>
-        <AppButton
-          v-if="activeTab !== 'frames'"
-          size="sm"
-          type="button"
-          variant="secondary"
-          @click="activeTab = 'frames'"
-        >
-          Open All frames
-        </AppButton>
-      </AppCard>
+      <p v-if="isLegacyRun" class="audit-detail__legacy">
+        <AppBadge tone="warning" size="xs">Legacy</AppBadge>
+        Older capture format —
+        <button type="button" class="audit-detail__legacy-link" @click="activeTab = 'frames'">view all frames</button>
+      </p>
 
       <div class="audit-detail__tabs" role="tablist" aria-label="Audit run views">
         <button
@@ -51,10 +49,157 @@
           role="tab"
           :aria-selected="activeTab === 'frames'"
           @click="activeTab = 'frames'"
-        >All frames</button>
+        >Frames</button>
       </div>
 
       <template v-if="activeTab === 'scanner'">
+
+        <section v-if="suggestions.length > 0 || suggestionsLoading" class="audit-detections" aria-label="AI detections">
+          <div class="audit-detections__head">
+            <div class="audit-detections__intro">
+              <span class="audit-detections__label">AI detections</span>
+              <p class="audit-detections__hint">Pick a finding — evidence loads below</p>
+            </div>
+            <div class="audit-detections__tools">
+              <span v-if="suggestions.length" class="audit-detections__count">{{ selectedDetectionIndex + 1 }} / {{ suggestions.length }}</span>
+              <button
+                class="audit-detections__refresh"
+                type="button"
+                :disabled="suggestionsLoading"
+                :title="suggestionsLoading ? 'Syncing' : 'Refresh detections'"
+                @click="$emit('refreshSuggestions')"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 006.34 6.34M4 15a8 8 0 0013.66 2.66" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <AppLoading v-if="suggestionsLoading && !suggestions.length" label="Loading detections" />
+
+          <div v-else class="audit-detections__rail" role="list">
+            <button
+              v-for="(suggestion, index) in suggestions"
+              :key="suggestion.id"
+              class="audit-detections__card"
+              :class="[
+                `audit-detections__card--${suggestion.severity ?? 'medium'}`,
+                { 'audit-detections__card--active': suggestion.id === selectedSuggestionId },
+              ]"
+              type="button"
+              role="listitem"
+              :aria-current="suggestion.id === selectedSuggestionId ? 'true' : undefined"
+              @click="selectSuggestion(suggestion.id)"
+            >
+              <span class="audit-detections__index">{{ index + 1 }}</span>
+              <div class="audit-detections__body">
+                <strong>{{ categoryLabels[suggestion.category] }}</strong>
+                <span class="audit-detections__meta">
+                  {{ formatConfidence(suggestion.confidence) }}
+                  <span v-if="suggestion.severity" class="audit-detections__sep">·</span>
+                  <span v-if="suggestion.severity">{{ suggestion.severity }}</span>
+                </span>
+              </div>
+              <span
+                class="audit-detections__status"
+                :class="`audit-detections__status--${suggestion.status}`"
+                :title="statusLabels[suggestion.status]"
+              />
+            </button>
+          </div>
+        </section>
+
+        <Transition name="review-panel">
+          <section v-if="selectedSuggestion" class="audit-inspector" aria-label="Detection inspector">
+            <div class="audit-inspector__head">
+              <h3 class="audit-inspector__title">{{ categoryLabels[selectedSuggestion.category] }}</h3>
+              <AppBadge :tone="selectedStatusTone" size="xs">{{ statusLabels[selectedSuggestion.status] }}</AppBadge>
+            </div>
+
+            <p v-if="selectedSuggestion.description" class="audit-inspector__desc">
+              {{ selectedSuggestion.description }}
+            </p>
+
+            <div class="audit-inspector__pill">
+              <span
+                v-if="selectedSuggestion.severity"
+                class="audit-inspector__tag audit-inspector__tag--severity"
+                :class="`audit-inspector__tag--severity-${selectedSuggestion.severity}`"
+              >
+                {{ selectedSuggestion.severity }}
+              </span>
+              <span class="audit-inspector__tag">{{ formatConfidence(selectedSuggestion.confidence) }}</span>
+              <span class="audit-inspector__tag audit-inspector__tag--muted">
+                {{ selectedSuggestion.department ?? 'Unrouted' }}
+              </span>
+            </div>
+
+            <div
+              v-if="selectedSuggestion.converted_report_id || convertedReportSelected"
+              class="audit-inspector__converted"
+            >
+              <AppBadge tone="success" size="xs">Converted</AppBadge>
+              <span>{{ selectedSuggestion.converted_report_id ?? convertedReportSelected }}</span>
+            </div>
+
+            <div class="audit-inspector__toolbar" role="group" aria-label="Review actions">
+              <div class="audit-inspector__choices">
+                <button
+                  v-for="opt in reviewOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="audit-inspector__choice"
+                  :class="[
+                    `audit-inspector__choice--${opt.tone}`,
+                    { 'audit-inspector__choice--active': selectedSuggestion.status === opt.value },
+                  ]"
+                  :title="opt.label"
+                  :disabled="isReviewingSelected || selectedSuggestion.status === 'converted_to_report'"
+                  @click="quickReview(opt.value)"
+                >
+                  <svg v-if="opt.tone === 'accept'" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                  <svg v-else-if="opt.tone === 'reject'" width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" />
+                  </svg>
+                  <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 6v6l3.5 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                    <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8" />
+                  </svg>
+                </button>
+              </div>
+
+              <input
+                v-model="localReviewerNote"
+                class="audit-inspector__note"
+                type="text"
+                :disabled="isReviewingSelected || selectedSuggestion.status === 'converted_to_report'"
+                maxlength="1000"
+                placeholder="Reviewer note…"
+                aria-label="Reviewer note"
+              />
+
+              <button
+                class="audit-inspector__convert"
+                type="button"
+                :disabled="isConvertingSelected || selectedSuggestion.status === 'converted_to_report'"
+                :title="isConvertingSelected ? 'Converting' : 'Convert to report'"
+                @click="$emit('convertSuggestion', selectedSuggestion.id)"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+
+            <p v-if="reviewErrorSelected || convertErrorSelected" class="audit-inspector__error">
+              {{ reviewErrorSelected ?? convertErrorSelected }}
+            </p>
+            <p v-if="isReviewingSelected" class="audit-inspector__hint">Saving review…</p>
+          </section>
+        </Transition>
 
         <AuditStreetViewScanner
           :error="scanPathError"
@@ -70,126 +215,8 @@
           @scan-point-selected="selectScanPoint"
         />
 
-        <div v-if="suggestions.length > 0 || suggestionsLoading" class="audit-detail__detections">
-          <div class="audit-detail__detections-head">
-            <span class="audit-detail__detections-label">
-              {{ suggestions.length }} detection{{ suggestions.length === 1 ? '' : 's' }}
-            </span>
-            <button
-              class="audit-detail__detections-refresh"
-              type="button"
-              :disabled="suggestionsLoading"
-              @click="$emit('refreshSuggestions')"
-            >{{ suggestionsLoading ? 'Syncing…' : 'Refresh' }}</button>
-          </div>
-
-          <div class="audit-detail__chips" role="list">
-            <button
-              v-for="suggestion in suggestions"
-              :key="suggestion.id"
-              class="audit-detail__chip"
-              :class="{ 'audit-detail__chip--active': suggestion.id === selectedSuggestionId }"
-              type="button"
-              role="listitem"
-              @click="selectSuggestion(suggestion.id)"
-            >
-              <span
-                class="audit-detail__chip-dot"
-                :style="{ background: severityColor(suggestion.severity) }"
-                aria-hidden="true"
-              />
-              <span class="audit-detail__chip-name">{{ categoryLabels[suggestion.category] }}</span>
-              <span class="audit-detail__chip-pct">{{ formatConfidence(suggestion.confidence) }}</span>
-              <span
-                class="audit-detail__chip-badge"
-                :class="`audit-detail__chip-badge--${suggestion.status}`"
-              >{{ shortStatusLabel(suggestion.status) }}</span>
-            </button>
-          </div>
-        </div>
-
-        <Transition name="review-panel">
-          <div v-if="selectedSuggestion" class="audit-detail__review">
-
-            <div class="audit-detail__review-top">
-              <div class="audit-detail__review-title-row">
-                <h3 class="audit-detail__review-title">{{ categoryLabels[selectedSuggestion.category] }}</h3>
-                <AppBadge :tone="selectedStatusTone">{{ statusLabels[selectedSuggestion.status] }}</AppBadge>
-              </div>
-              <p v-if="selectedSuggestion.description" class="audit-detail__review-desc">
-                {{ selectedSuggestion.description }}
-              </p>
-            </div>
-
-            <div class="audit-detail__review-stats">
-              <div class="audit-detail__stat">
-                <div class="audit-detail__confidence-track">
-                  <span
-                    class="audit-detail__confidence-fill"
-                    :style="{ width: `${(selectedSuggestion.confidence ?? 0) * 100}%` }"
-                  />
-                </div>
-                <span class="audit-detail__stat-val">{{ formatConfidence(selectedSuggestion.confidence) }}</span>
-                <span class="audit-detail__stat-label">confidence</span>
-              </div>
-              <span class="audit-detail__stat-sep" aria-hidden="true" />
-              <div class="audit-detail__stat">
-                <span
-                  class="audit-detail__stat-val"
-                  :class="selectedSuggestion.severity ? `audit-detail__stat-sev--${selectedSuggestion.severity}` : ''"
-                >{{ selectedSuggestion.severity ?? 'Unknown' }}</span>
-                <span class="audit-detail__stat-label">severity</span>
-              </div>
-              <span class="audit-detail__stat-sep" aria-hidden="true" />
-              <div class="audit-detail__stat">
-                <span class="audit-detail__stat-val">{{ selectedSuggestion.department ?? 'Unrouted' }}</span>
-                <span class="audit-detail__stat-label">department</span>
-              </div>
-            </div>
-
-            <div class="audit-detail__form">
-              <div class="audit-detail__actions" role="group" aria-label="Review decision">
-                <button
-                  v-for="opt in reviewOptions"
-                  :key="opt.value"
-                  type="button"
-                  class="audit-detail__action"
-                  :class="[`audit-detail__action--${opt.tone}`, { 'audit-detail__action--active': selectedSuggestion.status === opt.value }]"
-                  :disabled="isReviewingSelected || selectedSuggestion.status === 'converted_to_report'"
-                  @click="quickReview(opt.value)"
-                >{{ isReviewingSelected && localReviewStatus === opt.value ? 'Saving…' : opt.label }}</button>
-              </div>
-
-              <textarea
-                v-model="localReviewerNote"
-                class="audit-detail__note"
-                :disabled="isReviewingSelected || selectedSuggestion.status === 'converted_to_report'"
-                rows="2"
-                placeholder="Add a note…"
-              />
-
-              <div class="audit-detail__form-footer">
-                <p v-if="reviewErrorSelected || convertErrorSelected" class="audit-detail__form-error">
-                  {{ reviewErrorSelected ?? convertErrorSelected }}
-                </p>
-                <div v-if="selectedSuggestion.converted_report_id || convertedReportSelected" class="audit-detail__converted">
-                  <AppBadge tone="success">Converted to report</AppBadge>
-                  <span class="audit-detail__converted-id">{{ selectedSuggestion.converted_report_id ?? convertedReportSelected }}</span>
-                </div>
-                <AppButton
-                  size="sm"
-                  type="button"
-                  :disabled="isConvertingSelected || selectedSuggestion.status === 'converted_to_report'"
-                  @click="$emit('convertSuggestion', selectedSuggestion.id)"
-                >{{ isConvertingSelected ? 'Converting…' : 'Convert to report' }}</AppButton>
-              </div>
-            </div>
-
-          </div>
-        </Transition>
-
         <AppEmptyState
-          v-if="!suggestionsLoading && !scanPathLoading && suggestions.length === 0 && !scanPath.length"
+          v-if="!suggestionsLoading && !scanPathLoading && suggestions.length === 0"
           tone="audit"
           title="No detections yet"
           description="The AI pipeline has not returned detections for this run."
@@ -206,6 +233,8 @@
         @refresh="$emit('refreshFrames')"
       />
 
+      </template>
+
     </template>
 
     <AppEmptyState
@@ -220,18 +249,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import AppBadge from '@/components/common/AppBadge.vue';
-import AppButton from '@/components/common/AppButton.vue';
-import AppCard from '@/components/common/AppCard.vue';
 import AppEmptyState from '@/components/common/AppEmptyState.vue';
+import AppLoading from '@/components/common/AppLoading.vue';
 import type { AuditRunSummary, AuditFrameDetail, AuditFrameSummary, AuditScanPoint } from '@/types/audit';
 import type { AuditSuggestion, AuditSuggestionReviewPayload } from '@/types/detection';
 import type { BadgeTone } from '@/types/ui';
 import { formatAuditDateTime } from '@/utils/auditFormatting';
 import { isLegacyAuditRun } from '@/utils/auditLegacy';
-import { pickInitialScanPoint } from '@/utils/streetView';
 import { categoryLabels, formatConfidence } from '@/utils/reportFormatting';
 import AuditRunStatusPill from './AuditRunStatusPill.vue';
 import AuditFrameBrowser from './AuditFrameBrowser.vue';
+import AuditScanGlobeEmpty from './AuditScanGlobeEmpty.vue';
+import AuditScanGlobeLoading from './AuditScanGlobeLoading.vue';
 import AuditStreetViewScanner from './AuditStreetViewScanner.vue';
 
 const props = withDefaults(
@@ -295,23 +324,32 @@ const statusLabels: Record<AuditSuggestion['status'], string> = {
   converted_to_report: 'Converted',
 };
 
-const shortLabels: Record<string, string> = {
-  pending_review: 'Pending',
-  accepted: 'Accepted',
-  rejected: 'Rejected',
-  needs_manual_review: 'Manual',
-  converted_to_report: 'Converted',
-};
-
 const activeTab = ref<'scanner' | 'frames'>('scanner');
 const selectedFrameIndex = ref<number | null>(null);
 const selectedSuggestionId = ref<string | null>(null);
+
+const isPipelineActive = computed(
+  () => props.run?.status === 'running' || props.run?.status === 'queued',
+);
+
+const showScanGlobeWaiting = computed(
+  () =>
+    activeTab.value === 'scanner' &&
+    !props.scanPathError &&
+    props.scanPath.length === 0 &&
+    !isPipelineActive.value,
+);
 const localReviewStatus = ref<AuditSuggestionReviewPayload['status']>('accepted');
 const localReviewerNote = ref('');
 
 const selectedSuggestion = computed(() =>
   props.suggestions.find((s) => s.id === selectedSuggestionId.value) ?? null,
 );
+
+const selectedDetectionIndex = computed(() => {
+  const index = props.suggestions.findIndex((s) => s.id === selectedSuggestionId.value);
+  return index >= 0 ? index : 0;
+});
 
 const isLegacyRun = computed(() =>
   props.run ? isLegacyAuditRun(props.run, props.scanPath.length) : false,
@@ -350,20 +388,6 @@ const selectedStatusTone = computed<BadgeTone>(() => {
   return 'info';
 });
 
-function severityColor(severity: string | null | undefined): string {
-  const map: Record<string, string> = {
-    low: '#4a8c6e',
-    medium: '#b07d2a',
-    high: '#c0522a',
-    critical: '#991b1b',
-  };
-  return map[severity ?? ''] ?? 'rgba(23, 33, 26, 0.2)';
-}
-
-function shortStatusLabel(status: string): string {
-  return shortLabels[status] ?? status;
-}
-
 watch(
   () => props.run?.id,
   () => {
@@ -375,11 +399,21 @@ watch(
 );
 
 watch(
-  () => [props.run?.id, props.scanPath] as const,
-  ([runId, scanPath]) => {
-    if (!runId || !scanPath.length || selectedFrameIndex.value != null) return;
-    const initial = pickInitialScanPoint(scanPath);
-    selectedFrameIndex.value = initial?.frame_index ?? null;
+  () => [props.run?.id, props.suggestions] as const,
+  ([runId, suggestions]) => {
+    if (!runId) return;
+    if (!suggestions.length) {
+      selectedSuggestionId.value = null;
+      return;
+    }
+    const current = suggestions.find((s) => s.id === selectedSuggestionId.value);
+    if (!current) {
+      const first = suggestions[0];
+      selectedSuggestionId.value = first.id;
+      if (first.frame_index != null) {
+        selectedFrameIndex.value = first.frame_index;
+      }
+    }
   },
   { immediate: true },
 );
@@ -427,200 +461,309 @@ function quickReview(status: AuditSuggestionReviewPayload['status']) {
   });
 }
 
-function submitReview() {
-  quickReview(localReviewStatus.value);
-}
 </script>
 
 <style scoped>
 .audit-detail {
   display: grid;
-  gap: var(--space-4);
+  gap: 0.65rem;
 }
 
-/* ─── Header ─── */
 .audit-detail__header {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: 0.5rem;
+}
+
+.audit-detail__eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .audit-detail__title {
   margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  font-weight: 900;
   letter-spacing: -0.03em;
+  line-height: 1.15;
 }
 
 .audit-detail__meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
-  margin-top: var(--space-1);
+  gap: 0.3rem;
+  margin-top: 0.15rem;
   color: var(--text-secondary);
-  font-size: var(--text-sm);
+  font-size: 0.68rem;
 }
 
-.audit-detail__meta strong {
-  color: var(--text-primary);
-  font-weight: 875;
+.audit-detail__issues {
+  color: var(--color-amber-signal);
+  font-weight: 800;
 }
 
 .audit-detail__sep {
   color: var(--text-muted);
 }
 
-/* ─── Legacy ─── */
-.audit-detail__legacy {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.audit-detail__legacy-copy {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
-/* ─── Tabs ─── */
-.audit-detail__tabs {
+.audit-detail__status {
   display: flex;
-  gap: var(--space-2);
-  padding-top: var(--space-2);
-  border-top: 1px solid rgba(23, 33, 26, 0.08);
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.audit-detail__legacy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.audit-detail__legacy-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-municipal-green);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.audit-detail__tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border-radius: var(--radius-pill);
+  background: var(--surface-inset);
+  border: var(--border-soft);
 }
 
 .audit-detail__tab {
-  border: 1px solid rgba(23, 33, 26, 0.1);
+  border: 0;
   border-radius: var(--radius-pill);
-  padding: var(--space-2) var(--space-4);
-  color: var(--text-secondary);
-  background: rgba(255, 253, 247, 0.72);
-  font-size: var(--text-sm);
+  padding: 0.35rem 0.75rem;
+  color: var(--text-muted);
+  background: transparent;
+  font-size: 0.68rem;
   font-weight: 800;
   cursor: pointer;
-  transition: color var(--motion-fast) ease, background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+  transition: color var(--motion-fast) ease, background var(--motion-fast) ease;
 }
 
 .audit-detail__tab--active {
-  border-color: rgba(47, 93, 80, 0.35);
   color: var(--text-primary);
-  background: rgba(47, 93, 80, 0.1);
+  background: var(--surface-panel-strong);
+  box-shadow: var(--shadow-inset);
 }
 
-/* ─── Detection chips ─── */
-.audit-detail__detections {
+.audit-detections {
   display: grid;
-  gap: var(--space-2);
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-panel-strong) 90%, transparent);
 }
 
-.audit-detail__detections-head {
+.audit-detections__head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 
-.audit-detail__detections-label {
+.audit-detections__intro {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.audit-detections__label {
   color: var(--text-muted);
-  font-size: var(--text-xs);
+  font-size: 0.58rem;
   font-weight: 900;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.audit-detail__detections-refresh {
-  border: 0;
-  padding: 0;
-  color: var(--text-muted);
-  background: transparent;
-  font-size: var(--text-xs);
-  font-weight: 800;
-  cursor: pointer;
-  transition: color var(--motion-fast) ease;
-}
-
-.audit-detail__detections-refresh:hover:not(:disabled) {
-  color: var(--text-primary);
-}
-
-.audit-detail__detections-refresh:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.audit-detail__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.audit-detail__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid rgba(23, 33, 26, 0.1);
-  border-radius: var(--radius-pill);
+.audit-detections__hint {
+  margin: 0;
   color: var(--text-secondary);
-  background: rgba(255, 253, 247, 0.72);
-  font-size: var(--text-xs);
-  font-weight: 800;
-  cursor: pointer;
-  transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease, color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
+  font-size: 0.65rem;
 }
 
-.audit-detail__chip:hover {
-  border-color: rgba(23, 33, 26, 0.2);
-  color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.95);
-}
-
-.audit-detail__chip--active {
-  border-color: rgba(47, 93, 80, 0.4);
-  color: var(--text-primary);
-  background: rgba(47, 93, 80, 0.08);
-  box-shadow: 0 2px 8px rgba(47, 93, 80, 0.1);
-}
-
-.audit-detail__chip-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
+.audit-detections__tools {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   flex-shrink: 0;
 }
 
-.audit-detail__chip-name {
-  font-weight: 850;
-}
-
-.audit-detail__chip-pct {
+.audit-detections__count {
+  font-size: 0.62rem;
+  font-weight: 800;
   color: var(--text-muted);
-  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.audit-detail__chip-badge {
-  padding: 0.1rem 0.4rem;
-  border-radius: var(--radius-pill);
-  font-size: 0.6rem;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.audit-detail__chip-badge--pending_review { background: rgba(23, 33, 26, 0.07); color: var(--text-muted); }
-.audit-detail__chip-badge--accepted { background: rgba(47, 93, 80, 0.12); color: var(--color-municipal-green); }
-.audit-detail__chip-badge--rejected { background: rgba(192, 57, 43, 0.1); color: #c0392b; }
-.audit-detail__chip-badge--needs_manual_review { background: rgba(176, 125, 42, 0.12); color: #b07d2a; }
-.audit-detail__chip-badge--converted_to_report { background: rgba(47, 93, 80, 0.12); color: var(--color-municipal-green); }
-
-/* ─── Review panel ─── */
-.audit-detail__review {
+.audit-detections__refresh {
   display: grid;
-  gap: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid rgba(23, 33, 26, 0.08);
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.audit-detections__refresh:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+}
+
+.audit-detections__refresh:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.audit-detections__rail {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+  scrollbar-width: none;
+}
+
+.audit-detections__rail::-webkit-scrollbar {
+  display: none;
+}
+
+.audit-detections__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  min-width: 9.5rem;
+  padding: 0.5rem 0.6rem 0.5rem 0.55rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) ease,
+    background var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+
+.audit-detections__card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  bottom: 0.35rem;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(23, 33, 26, 0.15);
+}
+
+.audit-detections__card--low::before { background: #22c55e; }
+.audit-detections__card--medium::before { background: #eab308; }
+.audit-detections__card--high::before,
+.audit-detections__card--critical::before { background: #ef4444; }
+
+.audit-detections__card--active {
+  border-color: color-mix(in srgb, var(--color-municipal-green) 45%, var(--status-new-border));
+  background: color-mix(in srgb, var(--color-municipal-green) 14%, var(--surface-inset));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--color-municipal-green) 18%, transparent);
+  transform: translateY(-1px);
+}
+
+.audit-detections__index {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  color: var(--text-muted);
+  font-size: 0.62rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.audit-detections__card--active .audit-detections__index {
+  background: var(--color-municipal-green);
+  color: #fff;
+}
+
+.audit-detections__body {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.audit-detections__body strong {
+  font-size: 0.72rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.audit-detections__meta {
+  font-size: 0.6rem;
+  font-weight: 750;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.audit-detections__sep {
+  margin: 0 0.1rem;
+}
+
+.audit-detections__status {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: rgba(23, 33, 26, 0.2);
+}
+
+.audit-detections__status--accepted,
+.audit-detections__status--converted_to_report {
+  background: var(--color-municipal-green);
+}
+
+.audit-detections__status--rejected {
+  background: #c0392b;
+}
+
+.audit-detections__status--needs_manual_review {
+  background: var(--color-amber-signal);
+}
+
+.audit-detections__status--pending_review {
+  background: rgba(23, 33, 26, 0.22);
 }
 
 .review-panel-enter-active {
@@ -633,209 +776,244 @@ function submitReview() {
 
 .review-panel-enter-from {
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(4px);
 }
 
 .review-panel-leave-to {
   opacity: 0;
 }
 
-.audit-detail__review-top {
+.audit-inspector {
   display: grid;
-  gap: var(--space-2);
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border: var(--border-soft);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface-panel-strong) 92%, transparent);
 }
 
-.audit-detail__review-title-row {
+.audit-inspector__head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: 0.5rem;
 }
 
-.audit-detail__review-title {
+.audit-inspector__title {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 875;
+  font-size: 0.85rem;
+  font-weight: 900;
   letter-spacing: -0.02em;
 }
 
-.audit-detail__review-desc {
+.audit-inspector__desc {
   margin: 0;
   color: var(--text-secondary);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-}
-
-/* ─── Stats row ─── */
-.audit-detail__review-stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid rgba(23, 33, 26, 0.07);
-  border-radius: var(--radius-md);
-  background: rgba(23, 33, 26, 0.025);
-}
-
-.audit-detail__stat {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.audit-detail__confidence-track {
-  width: 4rem;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: rgba(23, 33, 26, 0.1);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.audit-detail__confidence-fill {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--color-amber-signal), var(--color-municipal-green));
+.audit-inspector__pill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  width: fit-content;
+  padding: 0.28rem 0.55rem;
+  border-radius: 999px;
+  background: var(--surface-inset);
+  border: var(--border-soft);
 }
 
-.audit-detail__stat-val {
-  font-size: var(--text-sm);
-  font-weight: 875;
+.audit-inspector__tag {
+  font-size: 0.62rem;
+  font-weight: 800;
   color: var(--text-primary);
   text-transform: capitalize;
 }
 
-.audit-detail__stat-sev--low { color: #4a8c6e; }
-.audit-detail__stat-sev--medium { color: #b07d2a; }
-.audit-detail__stat-sev--high { color: #c0522a; }
-.audit-detail__stat-sev--critical { color: #991b1b; }
-
-.audit-detail__stat-label {
-  font-size: var(--text-xs);
-  font-weight: 750;
+.audit-inspector__tag--muted {
   color: var(--text-muted);
+  text-transform: none;
 }
 
-.audit-detail__stat-sep {
-  width: 1px;
-  height: 1.25rem;
-  background: rgba(23, 33, 26, 0.1);
+.audit-inspector__tag--severity {
+  padding: 0.12rem 0.42rem;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.audit-inspector__tag--severity-low { background: rgba(34, 197, 94, 0.14); color: #16a34a; }
+.audit-inspector__tag--severity-medium { background: rgba(234, 179, 8, 0.16); color: #b45309; }
+.audit-inspector__tag--severity-high,
+.audit-inspector__tag--severity-critical { background: rgba(239, 68, 68, 0.14); color: #dc2626; }
+
+.audit-inspector__converted {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.audit-inspector__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.35rem;
+  border-top: var(--border-soft);
+}
+
+.audit-inspector__choices {
+  display: flex;
+  gap: 0.3rem;
   flex-shrink: 0;
 }
 
-/* ─── Review form ─── */
-.audit-detail__form {
+.audit-inspector__choice--accept { --action: var(--color-municipal-green); }
+.audit-inspector__choice--reject { --action: #c0392b; }
+.audit-inspector__choice--manual { --action: var(--color-amber-signal); }
+
+.audit-inspector__choice {
   display: grid;
-  gap: var(--space-3);
-}
-
-.audit-detail__actions {
-  display: flex;
-  gap: var(--space-2);
-}
-
-.audit-detail__action {
-  flex: 1;
-  padding: var(--space-2) var(--space-3);
-  border: 1.5px solid transparent;
-  border-radius: var(--radius-pill);
-  font-size: var(--text-sm);
-  font-weight: 800;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid color-mix(in srgb, var(--action) 30%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--action) 8%, transparent);
+  color: var(--action);
   cursor: pointer;
-  transition: background var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease;
+  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease, color var(--motion-fast) ease;
 }
 
-.audit-detail__action:disabled {
-  opacity: 0.45;
+.audit-inspector__choice--active,
+.audit-inspector__choice:hover:not(:disabled) {
+  background: var(--action);
+  border-color: var(--action);
+  color: #fff;
+}
+
+.audit-inspector__choice:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.audit-detail__action--accept {
-  border-color: rgba(47, 93, 80, 0.35);
-  color: var(--color-municipal-green);
-  background: rgba(47, 93, 80, 0.06);
-}
-.audit-detail__action--accept:hover:not(:disabled),
-.audit-detail__action--accept.audit-detail__action--active {
-  color: #fff;
-  background: var(--color-municipal-green);
-  border-color: var(--color-municipal-green);
-}
-
-.audit-detail__action--reject {
-  border-color: rgba(192, 57, 43, 0.35);
-  color: #c0392b;
-  background: rgba(192, 57, 43, 0.06);
-}
-.audit-detail__action--reject:hover:not(:disabled),
-.audit-detail__action--reject.audit-detail__action--active {
-  color: #fff;
-  background: #c0392b;
-  border-color: #c0392b;
-}
-
-.audit-detail__action--manual {
-  border-color: rgba(176, 125, 42, 0.35);
-  color: var(--color-amber-signal);
-  background: rgba(176, 125, 42, 0.06);
-}
-.audit-detail__action--manual:hover:not(:disabled),
-.audit-detail__action--manual.audit-detail__action--active {
-  color: #fff;
-  background: var(--color-amber-signal);
-  border-color: var(--color-amber-signal);
-}
-
-.audit-detail__note {
-  width: 100%;
-  padding: var(--space-3);
-  border: 1px solid rgba(23, 33, 26, 0.1);
+.audit-inspector__note {
+  flex: 1;
+  min-width: 0;
+  height: 2rem;
+  padding: 0 0.55rem;
+  border: var(--border-soft);
   border-radius: var(--radius-md);
+  background: var(--surface-inset);
   color: var(--text-primary);
-  background: rgba(255, 253, 247, 0.72);
-  font: inherit;
-  font-size: var(--text-sm);
-  resize: vertical;
-  box-sizing: border-box;
-  transition: border-color var(--motion-fast) ease;
+  font-family: inherit;
+  font-size: 0.68rem;
 }
 
-.audit-detail__note:focus {
-  outline: none;
-  border-color: rgba(47, 93, 80, 0.4);
-}
-
-.audit-detail__note:disabled { opacity: 0.5; }
-
-.audit-detail__form-footer {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.audit-detail__form-error {
-  margin: 0;
-  color: var(--color-repair-red);
-  font-size: var(--text-sm);
-  font-weight: 750;
-}
-
-.audit-detail__converted {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid rgba(47, 93, 80, 0.15);
-  border-radius: var(--radius-md);
-  background: rgba(47, 93, 80, 0.05);
-}
-
-.audit-detail__converted-id {
+.audit-inspector__note::placeholder {
   color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-weight: 750;
-  overflow-wrap: anywhere;
+}
+
+.audit-inspector__note:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--color-municipal-green) 40%, var(--status-new-border));
+}
+
+.audit-inspector__convert {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-municipal-green);
+  color: #fff;
+  cursor: pointer;
+}
+
+.audit-inspector__convert:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.audit-inspector__error {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--color-repair-red);
+}
+
+.audit-inspector__hint {
+  margin: 0;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .audit-detail__header {
+    flex-direction: column;
+  }
+
+  .audit-detail__status {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+  }
+
+  .audit-detail__tabs {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .audit-detail__tab {
+    flex: 1;
+    text-align: center;
+  }
+
+  .audit-detections__head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .audit-detections__tools {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .audit-inspector__head {
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .audit-inspector__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .audit-inspector__choices {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .audit-inspector__choice {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .audit-inspector__convert {
+    width: 100%;
+  }
 }
 </style>

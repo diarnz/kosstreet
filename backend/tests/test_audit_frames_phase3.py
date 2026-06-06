@@ -192,8 +192,8 @@ def test_resolve_waypoints_prefers_scan_coordinates_over_route_name() -> None:
     service._expand_scan_waypoints = MagicMock(return_value=[(42.213502, 20.741404)])
     run = AuditRun(
         id=uuid4(),
-        municipality="Prizren",
-        route_name="Naim Buduri, Prizren, Kosovo",
+        municipality="Kosovo",
+        route_name="Naim Buduri, Kosovo",
         scan_latitude=42.2137,
         scan_longitude=20.7397,
         notes=None,

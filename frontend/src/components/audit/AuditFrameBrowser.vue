@@ -1,11 +1,8 @@
 <template>
   <section class="audit-frame-browser">
     <div class="audit-frame-browser__header">
-      <div>
-        <h3 class="audit-frame-browser__title">Detected issues</h3>
-        <p class="audit-frame-browser__subtitle muted">Tap a card to inspect full-frame evidence.</p>
-      </div>
-      <AppBadge tone="source-ai-audit">{{ issueFrames.length }}</AppBadge>
+      <span class="audit-frame-browser__label">Detected issues</span>
+      <AppBadge tone="source-ai-audit" size="xs">{{ issueFrames.length }}</AppBadge>
     </div>
 
     <AppCard v-if="error" class="stack" variant="muted">
@@ -39,13 +36,20 @@
             :alt="`${frame.category ?? 'Issue'} frame ${frame.frame_index + 1}`"
             loading="lazy"
           />
-          <span class="audit-frame-browser__expand" aria-hidden="true">⤢</span>
+          <span class="audit-frame-browser__expand" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M9 3H5a2 2 0 00-2 2v4M15 3h4a2 2 0 012 2v4M9 21H5a2 2 0 01-2-2v-4M15 21h4a2 2 0 002-2v-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+          </span>
         </div>
         <div class="audit-frame-browser__card-body">
           <strong>{{ frame.category ? categoryLabels[frame.category] : 'Issue' }}</strong>
           <span class="audit-frame-browser__meta-line">
-            <span class="audit-frame-browser__severity">{{ frame.severity ?? 'unknown' }}</span>
-            <span v-if="frame.confidence != null">{{ formatConfidence(frame.confidence) }}</span>
+            <span
+              class="audit-frame-browser__severity"
+              :class="`audit-frame-browser__severity--${frame.severity ?? 'medium'}`"
+            >{{ frame.severity ?? 'unknown' }}</span>
+            <span v-if="frame.confidence != null" class="audit-frame-browser__confidence">{{ formatConfidence(frame.confidence) }}</span>
           </span>
         </div>
       </button>
@@ -148,55 +152,54 @@ function closeFrame() {
 <style scoped>
 .audit-frame-browser {
   display: grid;
-  gap: var(--space-4);
+  gap: 0.5rem;
 }
 
 .audit-frame-browser__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: 0.5rem;
 }
 
-.audit-frame-browser__title {
-  margin: 0;
-  font-size: var(--text-lg);
+.audit-frame-browser__label {
+  color: var(--text-muted);
+  font-size: 0.58rem;
   font-weight: 900;
-  letter-spacing: -0.02em;
-}
-
-.audit-frame-browser__subtitle {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .audit-frame-browser__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
-  gap: var(--space-3);
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+
+.audit-frame-browser__grid::-webkit-scrollbar {
+  display: none;
 }
 
 .audit-frame-browser__card {
   display: grid;
+  flex-shrink: 0;
+  width: 7.5rem;
   overflow: hidden;
   padding: 0;
-  border: 1px solid rgba(23, 33, 26, 0.1);
-  border-radius: calc(var(--radius-md) + 2px);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 253, 247, 0.62)),
-    var(--surface-panel);
-  box-shadow: 0 10px 24px rgba(23, 33, 26, 0.06);
+  border: var(--border-soft);
+  border-radius: var(--radius-md);
+  background: var(--surface-inset);
   cursor: pointer;
   text-align: left;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    border-color 0.18s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .audit-frame-browser__card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(23, 33, 26, 0.12);
+  border-color: color-mix(in srgb, var(--color-municipal-green) 35%, var(--status-new-border));
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--color-municipal-green) 12%, transparent);
+  transform: translateY(-1px);
 }
 
 .audit-frame-browser__card--low {
@@ -227,42 +230,57 @@ function closeFrame() {
 
 .audit-frame-browser__expand {
   position: absolute;
-  right: var(--space-2);
-  bottom: var(--space-2);
+  right: 0.35rem;
+  bottom: 0.35rem;
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 999px;
-  background: rgba(8, 12, 18, 0.72);
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  background: rgba(8, 12, 10, 0.72);
   color: #fff;
-  font-size: 0.85rem;
-  font-weight: 900;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 .audit-frame-browser__card-body {
   display: grid;
-  gap: var(--space-1);
-  padding: var(--space-3);
+  gap: 0.15rem;
+  padding: 0.4rem 0.45rem 0.45rem;
+  background: color-mix(in srgb, var(--surface-panel-strong) 88%, transparent);
+  border-top: var(--border-soft);
 }
 
 .audit-frame-browser__card-body strong {
   color: var(--text-primary);
-  font-size: var(--text-sm);
+  font-size: 0.65rem;
   font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .audit-frame-browser__meta-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--text-xs);
+  gap: 0.25rem;
+  font-size: 0.58rem;
   font-weight: 800;
 }
 
 .audit-frame-browser__severity {
   text-transform: capitalize;
+}
+
+.audit-frame-browser__severity--low { color: #22c55e; }
+.audit-frame-browser__severity--medium { color: #eab308; }
+.audit-frame-browser__severity--high,
+.audit-frame-browser__severity--critical { color: #f87171; }
+
+.audit-frame-browser__confidence {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 </style>

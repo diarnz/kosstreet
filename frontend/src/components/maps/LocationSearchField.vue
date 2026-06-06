@@ -3,9 +3,19 @@
     <label v-if="label" class="location-search__label">{{ label }}</label>
     <div
       class="location-search__shell"
-      :class="{ 'location-search__shell--disabled': disabled, 'location-search__shell--busy': isSearching }"
+      :class="{
+        'location-search__shell--disabled': disabled,
+        'location-search__shell--busy': isSearching,
+        'location-search__shell--embedded': variant === 'embedded',
+      }"
     >
-      <svg class="location-search__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg
+        v-if="variant !== 'embedded'"
+        class="location-search__icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
         <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
         <path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
       </svg>
@@ -56,13 +66,15 @@ const props = withDefaults(
     placeholder?: string;
     hint?: string;
     disabled?: boolean;
+    variant?: 'default' | 'embedded';
   }>(),
   {
     label: '',
     locationLabel: null,
-    placeholder: 'Search streets, landmarks, or neighborhoods in Prizren',
+    placeholder: 'Search streets, landmarks, or neighborhoods in Kosovo',
     hint: '',
     disabled: false,
+    variant: 'default',
   },
 );
 
@@ -166,6 +178,7 @@ async function onEnter() {
 .location-search {
   display: grid;
   gap: var(--space-2);
+  overflow: visible;
 }
 
 .location-search__label {
@@ -177,6 +190,8 @@ async function onEnter() {
 }
 
 .location-search__shell {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -186,6 +201,7 @@ async function onEnter() {
   border-radius: var(--radius-pill);
   background: #fff;
   box-shadow: 0 1px 6px rgba(23, 33, 26, 0.05);
+  overflow: visible;
   transition:
     border-color var(--motion-fast) ease,
     box-shadow var(--motion-fast) ease;
@@ -207,6 +223,47 @@ async function onEnter() {
   opacity: 0.85;
 }
 
+.location-search__shell--embedded {
+  flex: 1;
+  min-width: 0;
+  min-height: 2rem;
+  height: 2rem;
+  padding: 0 0.2rem 0 0.35rem;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: rgba(23, 33, 26, 0.05);
+  box-shadow: none;
+}
+
+.location-search__shell--embedded:focus-within {
+  background: rgba(47, 93, 80, 0.07);
+  box-shadow: none;
+}
+
+.location-search__shell--embedded .location-search__map-btn {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text-muted);
+  background: transparent;
+}
+
+.location-search__shell--embedded .location-search__map-btn:hover:not(:disabled) {
+  transform: none;
+  color: var(--text-primary);
+  background: rgba(47, 93, 80, 0.08);
+}
+
+.location-search__shell--embedded .location-search__host :deep(input) {
+  min-height: 2rem;
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.location-search__shell--embedded .location-search__host :deep(input::placeholder) {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 .location-search__icon {
   flex-shrink: 0;
   width: 1rem;
@@ -220,6 +277,7 @@ async function onEnter() {
   min-width: 0;
   display: flex;
   align-items: center;
+  overflow: visible;
 }
 
 .location-search__map-btn {
@@ -290,5 +348,21 @@ async function onEnter() {
 .location-search__hint--warn {
   color: var(--color-repair-red);
   font-weight: 750;
+}
+
+@media (max-width: 640px) {
+  .location-search__shell:not(.location-search__shell--embedded) {
+    min-height: 2.85rem;
+    padding-inline: 0.65rem;
+  }
+
+  .location-search__shell:not(.location-search__shell--embedded) .location-search__map-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .location-search__host :deep(input) {
+    font-size: 1rem;
+  }
 }
 </style>

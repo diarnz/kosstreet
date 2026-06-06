@@ -1,16 +1,19 @@
 import type { ReportSummary } from '@/types/report';
 
-/** Default template city for maps, search bias, and demo data. */
-export const PRIZREN_VIEWPORT = {
+/** Default map viewport — centered on Kosovo (no single-city bias). */
+export const KOSOVO_DEFAULT_VIEWPORT = {
   center: {
-    latitude: 42.2139,
-    longitude: 20.7397,
+    latitude: 42.56,
+    longitude: 20.92,
   },
-  zoom: 14,
+  zoom: 8,
 } as const;
 
-/** @deprecated Use PRIZREN_VIEWPORT */
-export const PRISHTINA_VIEWPORT = PRIZREN_VIEWPORT;
+/** @deprecated Use KOSOVO_DEFAULT_VIEWPORT */
+export const PRIZREN_VIEWPORT = KOSOVO_DEFAULT_VIEWPORT;
+
+/** @deprecated Use KOSOVO_DEFAULT_VIEWPORT */
+export const PRISHTINA_VIEWPORT = KOSOVO_DEFAULT_VIEWPORT;
 
 export const KOSOVO_BOUNDS = {
   north: 43.27,

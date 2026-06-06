@@ -8,6 +8,16 @@
   gap: var(--space-8);
 }
 
+@media (max-width: 640px) {
+  .stack-lg {
+    gap: var(--space-5);
+  }
+
+  .cluster-between {
+    gap: var(--space-2);
+  }
+}
+
 .stack-xl {
   display: grid;
   gap: var(--space-12);

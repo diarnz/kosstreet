@@ -24,6 +24,7 @@ On startup, any images still in `backend/uploads/` are uploaded to Supabase auto
 ## API behavior
 
 - The database still stores only the filename in `reports.image_path`.
-- API responses return a full public URL in `image_url`, for example:
-  `https://YOUR_PROJECT_REF.supabase.co/storage/v1/object/public/report-images/reports/<uuid>.jpg`
-- If Supabase Storage is not configured, the app falls back to local `/uploads/...` URLs.
+- API responses return a proxy URL in `image_url`, for example:
+  `/api/v1/reports/<report-id>/image`
+- The backend serves images from Supabase using the service role key, so the bucket does **not** need to be public.
+- If Supabase Storage is not configured, the app falls back to local files served through the same proxy route.

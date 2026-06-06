@@ -37,30 +37,16 @@
           and review AI street audits nationwide.
         </p>
 
-        <div class="home-hero__actions">
-          <RouterLink class="home-hero__cta home-hero__cta--primary" to="/report">
-            Report an issue
-          </RouterLink>
-          <RouterLink class="home-hero__cta" to="/dashboard">
-            Open dashboard
-          </RouterLink>
-        </div>
-
         <div class="home-hero__stats">
-          <span class="home-hero__stat">
-            <strong>Nationwide</strong>
-            <span>Kosovo coverage</span>
-          </span>
-          <span class="home-hero__stat-sep" aria-hidden="true" />
-          <span class="home-hero__stat">
-            <strong>AI + Human</strong>
-            <span>Review model</span>
-          </span>
-          <span class="home-hero__stat-sep" aria-hidden="true" />
-          <span class="home-hero__stat">
-            <strong>Real-time</strong>
-            <span>Command center</span>
-          </span>
+          <div v-for="stat in heroStats" :key="stat.label" class="home-hero__stat">
+            <span class="home-hero__stat-icon" aria-hidden="true">
+              <component :is="stat.icon" />
+            </span>
+            <span class="home-hero__stat-copy">
+              <strong>{{ stat.label }}</strong>
+              <span>{{ stat.sub }}</span>
+            </span>
+          </div>
         </div>
       </div>
     </section>
@@ -75,12 +61,19 @@
           class="home-deck__tile"
           :class="`home-deck__tile--${tile.tone}`"
         >
-          <span class="home-deck__tile-index" aria-hidden="true">{{ tile.index }}</span>
+          <span class="home-deck__tile-icon" aria-hidden="true">
+            <component :is="tile.icon" />
+          </span>
           <div class="home-deck__tile-body">
+            <span class="home-deck__tile-index">{{ tile.index }}</span>
             <strong class="home-deck__tile-title">{{ tile.title }}</strong>
             <span class="home-deck__tile-sub">{{ tile.sub }}</span>
           </div>
-          <span class="home-deck__tile-arrow" aria-hidden="true">→</span>
+          <span class="home-deck__tile-arrow" aria-hidden="true">
+            <svg viewBox="0 0 16 16" fill="none">
+              <path d="M3 8h9M9 5l3 3-3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
           <span class="home-deck__tile-shine" aria-hidden="true" />
         </RouterLink>
       </nav>
@@ -88,9 +81,18 @@
       <div class="home-deck__pipeline">
         <span class="home-deck__pipeline-label">Pipeline</span>
         <ol class="home-deck__steps">
-          <li v-for="(step, i) in loopSteps" :key="step">
-            <span class="home-deck__step-name">{{ step }}</span>
-            <span v-if="i < loopSteps.length - 1" class="home-deck__step-sep" aria-hidden="true" />
+          <li v-for="(step, i) in loopSteps" :key="step.id">
+            <span class="home-deck__step-chip">
+              <span class="home-deck__step-icon" aria-hidden="true">
+                <component :is="step.icon" />
+              </span>
+              <span class="home-deck__step-name">{{ step.label }}</span>
+            </span>
+            <span v-if="i < loopSteps.length - 1" class="home-deck__step-sep" aria-hidden="true">
+              <svg viewBox="0 0 16 16" fill="none">
+                <path d="M4 8h8M9 5l3 3-3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
           </li>
         </ol>
       </div>
@@ -100,15 +102,156 @@
 </template>
 
 <script setup lang="ts">
+import { defineComponent, h } from 'vue';
 import AppLogo from '@/components/common/AppLogo.vue';
 import AppShell from '@/layouts/AppShell.vue';
 
-const loopSteps = ['Detect', 'Verify', 'Route', 'Resolve', 'Measure'];
+const iconProps = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  xmlns: 'http://www.w3.org/2000/svg',
+};
+
+function makeIcon(children: ReturnType<typeof h>[]) {
+  return defineComponent({
+    render: () => h('svg', iconProps, children),
+  });
+}
+
+const IconCoverage = makeIcon([
+  h('circle', { cx: '12', cy: '12', r: '9', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('path', {
+    d: 'M3 12h18M12 3c2.8 2.4 4.5 5.6 4.5 9s-1.7 6.6-4.5 9M12 3c-2.8 2.4-4.5 5.6-4.5 9s1.7 6.6 4.5 9',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+  }),
+]);
+
+const IconAiReview = makeIcon([
+  h('path', {
+    d: 'M12 3l1.4 4.3H18l-3.6 2.6 1.4 4.3L12 11.6 8.2 14.2l1.4-4.3L6 7.3h4.6L12 3z',
+    stroke: 'currentColor',
+    'stroke-width': '1.5',
+    'stroke-linejoin': 'round',
+  }),
+  h('circle', { cx: '18.5', cy: '6.5', r: '1.2', fill: 'currentColor' }),
+  h('circle', { cx: '5.5', cy: '17.5', r: '1.2', fill: 'currentColor' }),
+]);
+
+const IconRealtime = makeIcon([
+  h('circle', { cx: '12', cy: '12', r: '8', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('path', {
+    d: 'M12 7v5l3 2',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+  }),
+  h('circle', { cx: '12', cy: '12', r: '1.4', fill: 'currentColor' }),
+]);
+
+const IconReport = makeIcon([
+  h('path', {
+    d: 'M8 4h8a2 2 0 012 2v12l-6-3-6 3V6a2 2 0 012-2z',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linejoin': 'round',
+  }),
+  h('path', { d: 'M10 9h4M10 12h4', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
+]);
+
+const IconDashboard = makeIcon([
+  h('rect', { x: '4', y: '4', width: '7', height: '7', rx: '1.6', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('rect', { x: '13', y: '4', width: '7', height: '4', rx: '1.6', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('rect', { x: '13', y: '11', width: '7', height: '9', rx: '1.6', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('rect', { x: '4', y: '14', width: '7', height: '6', rx: '1.6', stroke: 'currentColor', 'stroke-width': '1.6' }),
+]);
+
+const IconAudit = makeIcon([
+  h('path', {
+    d: 'M5 7h14M5 12h14M5 17h9',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+  }),
+  h('circle', { cx: '18', cy: '17', r: '2.2', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('path', {
+    d: 'M19.6 18.6l1.8 1.8',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+  }),
+]);
+
+const IconDetect = makeIcon([
+  h('circle', { cx: '11', cy: '11', r: '6', stroke: 'currentColor', 'stroke-width': '1.6' }),
+  h('path', { d: 'M16 16l4 4', stroke: 'currentColor', 'stroke-width': '1.6', 'stroke-linecap': 'round' }),
+]);
+
+const IconVerify = makeIcon([
+  h('path', {
+    d: 'M6 12l3.2 3.2L18 7',
+    stroke: 'currentColor',
+    'stroke-width': '1.8',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+  }),
+]);
+
+const IconRoute = makeIcon([
+  h('path', {
+    d: 'M5 6c0-1.7 1.3-3 3-3s3 1.3 3 3-1.3 3-3 3H8v4',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+  }),
+  h('path', {
+    d: 'M16 14c0 1.7-1.3 3-3 3s-3-1.3-3-3 1.3-3 3-3h1V8',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+  }),
+]);
+
+const IconResolve = makeIcon([
+  h('path', {
+    d: 'M12 3l2.2 4.5 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 8.2l5-.7L12 3z',
+    stroke: 'currentColor',
+    'stroke-width': '1.5',
+    'stroke-linejoin': 'round',
+  }),
+]);
+
+const IconMeasure = makeIcon([
+  h('path', {
+    d: 'M5 18V8M9 18V5M13 18v-7M17 18v-4',
+    stroke: 'currentColor',
+    'stroke-width': '1.6',
+    'stroke-linecap': 'round',
+  }),
+]);
+
+const heroStats = [
+  { label: 'Nationwide', sub: 'Kosovo coverage', icon: IconCoverage },
+  { label: 'AI + Human', sub: 'Review model', icon: IconAiReview },
+  { label: 'Real-time', sub: 'Command center', icon: IconRealtime },
+];
+
+const loopSteps = [
+  { id: 'detect', label: 'Detect', icon: IconDetect },
+  { id: 'verify', label: 'Verify', icon: IconVerify },
+  { id: 'route', label: 'Route', icon: IconRoute },
+  { id: 'resolve', label: 'Resolve', icon: IconResolve },
+  { id: 'measure', label: 'Measure', icon: IconMeasure },
+];
 
 const tiles = [
-  { to: '/report',    index: '01', tone: 'citizen',   title: 'Citizen report',      sub: 'Submit a street issue' },
-  { to: '/dashboard', index: '02', tone: 'dashboard', title: 'Command dashboard',   sub: 'Municipal triage & ops' },
-  { to: '/audit',     index: '03', tone: 'audit',     title: 'Street audit',        sub: 'AI-powered scanning' },
+  { to: '/report', index: '01', tone: 'citizen', title: 'Citizen report', sub: 'Submit a street issue', icon: IconReport },
+  { to: '/dashboard', index: '02', tone: 'dashboard', title: 'Command dashboard', sub: 'Municipal triage & ops', icon: IconDashboard },
+  { to: '/audit', index: '03', tone: 'audit', title: 'Street audit', sub: 'AI-powered scanning', icon: IconAudit },
 ];
 </script>
 
@@ -277,97 +420,91 @@ const tiles = [
   line-height: 1.6;
 }
 
-/* CTA actions */
-.home-hero__actions {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  justify-content: center;
-  align-items: center;
-  padding: 0.32rem;
-  border: 1px solid rgba(23, 33, 26, 0.09);
-  border-radius: var(--radius-pill);
-  background: rgba(255, 253, 247, 0.48);
-  backdrop-filter: blur(12px);
-  box-shadow:
-    0 4px 24px rgba(23, 33, 26, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-}
-
-.home-hero__cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.5rem;
-  padding: 0 1.35rem;
-  border-radius: var(--radius-pill);
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  font-weight: 900;
-  letter-spacing: 0.005em;
-  transition:
-    transform var(--motion-fast) var(--ease-out-expo),
-    box-shadow var(--motion-fast) ease,
-    background var(--motion-fast) ease;
-}
-
-.home-hero__cta--primary {
-  color: #fff;
-  background: linear-gradient(140deg, #3a7062 0%, #2f5d50 50%, #224840 100%);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
-    0 8px 24px rgba(47, 93, 80, 0.32),
-    0 2px 6px rgba(47, 93, 80, 0.5);
-}
-
-.home-hero__cta--primary:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
-    0 12px 32px rgba(47, 93, 80, 0.42),
-    0 3px 8px rgba(47, 93, 80, 0.55);
-}
-
-.home-hero__cta:not(.home-hero__cta--primary):hover {
-  background: rgba(47, 93, 80, 0.09);
-  transform: translateY(-1px);
-}
-
-/* Inline stats */
+/* Hero stat chips */
 .home-hero__stats {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-3);
-  align-items: center;
+  gap: var(--space-2);
+  align-items: stretch;
   justify-content: center;
-  padding-top: var(--space-2);
+  width: min(100%, 40rem);
+  padding-top: var(--space-3);
 }
 
 .home-hero__stat {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: baseline;
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 9.5rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid rgba(23, 33, 26, 0.08);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 247, 0.55);
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 8px 24px rgba(23, 33, 26, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  text-align: left;
+  transition:
+    transform var(--motion-fast) var(--ease-out-expo),
+    border-color var(--motion-fast) ease,
+    box-shadow var(--motion-fast) ease;
 }
 
-.home-hero__stat strong {
+.home-hero__stat:hover {
+  transform: translateY(-2px);
+  border-color: rgba(47, 93, 80, 0.22);
+  box-shadow:
+    0 12px 28px rgba(23, 33, 26, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.home-hero__stat-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: var(--radius-md);
+  color: var(--color-municipal-green);
+  background: color-mix(in srgb, var(--color-municipal-green) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-municipal-green) 22%, transparent);
+}
+
+.home-hero__stat-icon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.home-hero__stat:nth-child(2) .home-hero__stat-icon {
+  color: var(--color-amber-signal);
+  background: color-mix(in srgb, var(--color-amber-signal) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-amber-signal) 22%, transparent);
+}
+
+.home-hero__stat:nth-child(3) .home-hero__stat-icon {
+  color: var(--color-resolved-blue);
+  background: color-mix(in srgb, var(--color-resolved-blue) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-resolved-blue) 22%, transparent);
+}
+
+.home-hero__stat-copy {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.home-hero__stat-copy strong {
   color: var(--text-primary);
   font-size: var(--text-xs);
   font-weight: 900;
   letter-spacing: -0.01em;
 }
 
-.home-hero__stat span {
+.home-hero__stat-copy span {
   color: var(--text-muted);
   font-size: 0.68rem;
   font-weight: 700;
-}
-
-.home-hero__stat-sep {
-  display: block;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(23, 33, 26, 0.2);
 }
 
 /* ─── Deck ─────────────────────────────────────────── */
@@ -387,10 +524,11 @@ const tiles = [
 
 .home-deck__tile {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-4) var(--space-3);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
   border: 1px solid rgba(23, 33, 26, 0.09);
   border-radius: var(--radius-lg);
   background: rgba(255, 253, 247, 0.5);
@@ -441,20 +579,50 @@ const tiles = [
   opacity: 1;
 }
 
-/* Large watermark index */
+.home-deck__tile-icon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 6%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    transform var(--motion-base) var(--ease-out-expo),
+    box-shadow var(--motion-base) ease;
+}
+
+.home-deck__tile-icon svg {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.home-deck__tile:hover .home-deck__tile-icon {
+  transform: scale(1.05);
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--accent) 10%, transparent),
+    0 8px 20px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
 .home-deck__tile-index {
   display: block;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   font-weight: 900;
   letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--accent) 75%, transparent);
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
   text-transform: uppercase;
 }
 
 .home-deck__tile-body {
   display: grid;
   gap: 0.2rem;
-  flex: 1;
+  min-width: 0;
+  text-align: left;
 }
 
 .home-deck__tile-title {
@@ -471,17 +639,26 @@ const tiles = [
 }
 
 .home-deck__tile-arrow {
-  align-self: flex-end;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
   color: var(--accent);
-  font-size: 1rem;
-  font-weight: 900;
-  opacity: 0.65;
-  transition: transform var(--motion-fast) ease, opacity var(--motion-fast) ease;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  opacity: 0.85;
+  transition: transform var(--motion-fast) ease, opacity var(--motion-fast) ease, background var(--motion-fast) ease;
+}
+
+.home-deck__tile-arrow svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .home-deck__tile:hover .home-deck__tile-arrow {
-  transform: translateX(4px);
+  transform: translateX(3px);
   opacity: 1;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
 }
 
 /* Pipeline strip */
@@ -519,22 +696,50 @@ const tiles = [
 .home-deck__steps li {
   display: inline-flex;
   align-items: center;
-  gap: 0.1rem;
+  gap: 0.35rem;
+}
+
+.home-deck__step-chip {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0.55rem 0.35rem 0.4rem;
+  border: 1px solid rgba(23, 33, 26, 0.07);
+  border-radius: var(--radius-pill);
+  background: rgba(255, 253, 247, 0.45);
+}
+
+.home-deck__step-icon {
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  color: var(--color-municipal-green);
+}
+
+.home-deck__step-icon svg {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .home-deck__step-name {
   color: var(--text-secondary);
   font-size: var(--text-xs);
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .home-deck__step-sep {
-  display: inline-block;
-  width: 14px;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(47, 93, 80, 0.3), rgba(217, 144, 47, 0.3));
-  margin: 0 0.25rem;
-  vertical-align: middle;
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  color: color-mix(in srgb, var(--color-municipal-green) 55%, transparent);
+  opacity: 0.7;
+}
+
+.home-deck__step-sep svg {
+  width: 0.75rem;
+  height: 0.75rem;
 }
 
 
@@ -545,13 +750,29 @@ const tiles = [
   }
 }
 
-@media (max-width: 480px) {
-  .home-hero__stats {
-    flex-direction: column;
-    gap: var(--space-1);
+@media (max-width: 640px) {
+  .home-hero__stat {
+    flex: 1 1 100%;
+    min-width: 0;
   }
 
-  .home-hero__stat-sep {
+  .home-deck__tile {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .home-deck__tile-arrow {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-deck__steps {
+    justify-content: center;
+  }
+
+  .home-deck__step-sep {
     display: none;
   }
 }

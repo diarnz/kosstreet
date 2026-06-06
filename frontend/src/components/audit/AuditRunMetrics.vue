@@ -84,4 +84,39 @@ defineProps<{
   background: rgba(23, 33, 26, 0.12);
   flex-shrink: 0;
 }
+
+@media (max-width: 640px) {
+  .audit-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem 0.35rem;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    overflow: visible;
+  }
+
+  .audit-metrics__sep {
+    display: none;
+  }
+
+  .audit-metrics__stat {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+    text-align: center;
+  }
+
+  .audit-metrics__value {
+    font-size: 1.1rem;
+  }
+
+  .audit-metrics__label {
+    font-size: 0.52rem;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+}
 </style>

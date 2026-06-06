@@ -14,5 +14,13 @@ import AppShell from './AppShell.vue';
 .citizen-layout {
   display: grid;
   gap: var(--space-5);
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .citizen-layout {
+    gap: var(--space-3);
+  }
 }
 </style>

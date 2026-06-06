@@ -1,7 +1,7 @@
 """Demo-data entrypoint for KoStreet.
 
 This script is intentionally limited to shared seeding orchestration. Concrete seed data should be
-added after the Prishtina demo route and legally usable imagery sources are finalized.
+added after the Kosovo demo route and legally usable imagery sources are finalized.
 """
 
 

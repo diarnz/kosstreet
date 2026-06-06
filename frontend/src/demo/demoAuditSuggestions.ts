@@ -1,5 +1,5 @@
 import type { AuditSuggestion } from '@/types/detection';
-import { DEMO_AUDIT_RUN_ID } from '@/demo/demoAuditScanPath';
+import { DEMO_AUDIT_RUN_ID } from '@/demo/demoAuditConstants';
 import { boundingBoxToRegion } from '@/utils/detectionRegions';
 
 export const demoAuditSuggestions: AuditSuggestion[] = [
