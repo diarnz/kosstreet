@@ -15,7 +15,7 @@ echo "  cd ${ROOT_DIR}/backend"
 echo "  python -m venv .venv"
 echo "  source .venv/bin/activate"
 echo "  pip install -e '.[dev]'"
-echo "  uvicorn app.main:app --reload"
+echo "  uvicorn app.main:app --reload --port 8001"
 echo
 echo "AI package:"
 echo "  cd ${ROOT_DIR}/ai"

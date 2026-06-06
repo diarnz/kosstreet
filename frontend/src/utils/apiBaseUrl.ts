@@ -10,7 +10,7 @@ export function resolveApiBaseUrl(options: ResolveApiBaseUrlOptions = {}): strin
   const configured = (options.configured ?? import.meta.env.VITE_API_BASE_URL)?.replace(/\/$/, '');
 
   if (!dev) {
-    return configured || 'http://localhost:8000';
+    return configured || 'http://localhost:8001';
   }
 
   // In dev, same-origin requests go through the Vite proxy and avoid CORS.

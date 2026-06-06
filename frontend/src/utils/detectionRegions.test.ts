@@ -13,7 +13,7 @@ import {
 describe('detectionRegions', () => {
   it('resolves relative API asset URLs against the configured base', () => {
     expect(resolveApiAssetUrl('/api/v1/audit-runs/demo/frames/0/image')).toBe(
-      'http://localhost:8000/api/v1/audit-runs/demo/frames/0/image',
+      'http://localhost:8001/api/v1/audit-runs/demo/frames/0/image',
     );
   });
 

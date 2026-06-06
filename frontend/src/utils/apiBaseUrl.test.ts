@@ -7,7 +7,7 @@ describe('resolveApiBaseUrl', () => {
     expect(
       resolveApiBaseUrl({
         dev: true,
-        configured: 'http://localhost:8000',
+        configured: 'http://localhost:8001',
       }),
     ).toBe('');
   });
