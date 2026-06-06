@@ -1,4 +1,5 @@
-﻿import uuid
+﻿import builtins
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from geoalchemy2.functions import ST_MakePoint
@@ -22,7 +23,9 @@ class AuditRunRepository:
         result = await self.db.execute(q)
         return list(result.scalars().all())
 
-    async def list_with_details(self, *, visible_only: bool = False) -> list[AuditRun]:
+    async def list_with_details(
+        self, *, visible_only: bool = False
+    ) -> builtins.list[AuditRun]:
         q = (
             select(AuditRun)
             .options(selectinload(AuditRun.suggestions), selectinload(AuditRun.frames))

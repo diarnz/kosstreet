@@ -71,11 +71,6 @@ class AdminAuditRunSummary(AuditRunSummary):
     civic_frame_count: int = 0
 
 
-class AdminAuditRunContent(BaseModel):
-    suggestions: list[AuditSuggestionRead]
-    frames: list[AuditFrameSummary]
-
-
 class DetectionRegionRead(BaseModel):
     center_x: float
     center_y: float
@@ -120,6 +115,11 @@ class AuditFrameSummary(BaseModel):
     description: str | None
     suggestion_id: UUID | None
     frame_image_url: str
+
+
+class AdminAuditRunContent(BaseModel):
+    suggestions: list[AuditSuggestionRead]
+    frames: list[AuditFrameSummary]
 
 
 class AuditFrameDetail(AuditFrameSummary):
